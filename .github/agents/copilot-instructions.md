@@ -1,3 +1,7 @@
+---
+description: Project-specific Copilot guidance derived from active feature plans.
+---
+
 # dotenv-sync Development Guidelines
 
 Auto-generated from all feature plans. Last updated: 2026-03-07

@@ -111,7 +111,7 @@ Expected result:
 ```bash
 go test ./...
 go test ./... -run TestContract
-go test ./... -bench .
+go test ./... -bench . -run '^$'
 ```
 
 Expected result:
@@ -119,3 +119,26 @@ Expected result:
 - Contract tests verify command semantics, exit codes, and output vocabulary.
 - Benchmarks confirm the sync, diff, and validate paths meet the documented
   performance budgets.
+
+## 9. Example operator workflow
+
+```bash
+./bin/ds doctor
+./bin/ds sync --dry-run
+./bin/ds sync
+./bin/ds diff
+./bin/ds validate
+./bin/ds missing
+./bin/ds init --dry-run
+./bin/ds reverse --dry-run
+```
+
+Expected result:
+- `doctor` verifies `rbw` availability and unlock state with actionable recovery
+  guidance.
+- `sync` writes `.env` from `.env.example` while preserving deterministic file
+  formatting and redacting secrets in command output.
+- `diff`, `validate`, and `missing` use the shared status vocabulary and return
+  CI-friendly exit codes.
+- `init` and `reverse` maintain `.env.example` with blank placeholders only and
+  never write resolved secrets back to the schema.

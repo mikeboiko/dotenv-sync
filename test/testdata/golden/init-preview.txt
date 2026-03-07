@@ -1,0 +1,4 @@
+ADD DATABASE_URL [MISSING]
+ADD JWT_SECRET [MISSING]
+ADD PORT [STATIC]
+CHECKED .env.example (added: 3, dry-run)

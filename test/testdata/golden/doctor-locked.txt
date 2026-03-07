@@ -1,0 +1,4 @@
+ERROR E003
+Problem: Bitwarden database is locked
+Impact: sync cannot resolve provider-managed schema keys
+Action: run 'rbw unlock' and retry
