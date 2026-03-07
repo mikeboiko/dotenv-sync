@@ -1,6 +1,5 @@
 ---
-
-description: "Task list for implementing dotenv-sync CLI MVP"
+description: 'Task list for implementing dotenv-sync CLI MVP'
 ---
 
 # Tasks: dotenv-sync CLI MVP
@@ -37,10 +36,10 @@ implementation, testing, and constitution compliance validation for each story.
 **Purpose**: Initialize the Go module, the `ds` executable entrypoint, and the
 shared test/fixture scaffolding used by every story.
 
-- [X] T001 Initialize the Go module and default `ds` entrypoint in `go.mod`, `go.sum`, `cmd/ds/main.go`, and `pkg/dotenvsync/version.go`
-- [X] T002 [P] Scaffold the Cobra root and subcommand files in `internal/cli/root.go`, `internal/cli/sync.go`, `internal/cli/diff.go`, `internal/cli/validate.go`, `internal/cli/doctor.go`, `internal/cli/init.go`, `internal/cli/missing.go`, and `internal/cli/reverse.go`
-- [X] T003 [P] Create shared Go test helpers in `test/contract/helpers_test.go`, `test/integration/helpers_test.go`, and `test/testdata/README.md`
-- [X] T004 [P] Seed baseline env, provider, and golden fixtures in `test/testdata/env/basic.env.example`, `test/testdata/env/basic.env`, `test/testdata/provider/rbw-list-success.txt`, and `test/testdata/golden/sync-dry-run.txt`
+- [x] T001 Initialize the Go module and default `ds` entrypoint in `go.mod`, `go.sum`, `cmd/ds/main.go`, and `pkg/dotenvsync/version.go`
+- [x] T002 [P] Scaffold the Cobra root and subcommand files in `internal/cli/root.go`, `internal/cli/sync.go`, `internal/cli/diff.go`, `internal/cli/validate.go`, `internal/cli/doctor.go`, `internal/cli/init.go`, `internal/cli/missing.go`, and `internal/cli/reverse.go`
+- [x] T003 [P] Create shared Go test helpers in `test/contract/helpers_test.go`, `test/integration/helpers_test.go`, and `test/testdata/README.md`
+- [x] T004 [P] Seed baseline env, provider, and golden fixtures in `test/testdata/env/basic.env.example`, `test/testdata/env/basic.env`, `test/testdata/provider/rbw-list-success.txt`, and `test/testdata/golden/sync-dry-run.txt`
 
 ---
 
@@ -50,14 +49,14 @@ shared test/fixture scaffolding used by every story.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [X] T005 Implement `.envsync.yaml` loading and default resolution in `internal/config/config.go`
-- [X] T006 [P] Implement shared output vocabulary, redaction, and exit-code helpers in `internal/report/output.go`, `internal/report/redact.go`, and `internal/report/exitcodes.go`
-- [X] T007 [P] Implement envfile domain types and token parsing in `internal/envfile/model.go` and `internal/envfile/parser.go`
-- [X] T008 [P] Implement deterministic writing, merge helpers, and atomic rewrites in `internal/envfile/writer.go`, `internal/envfile/merge.go`, and `internal/fs/atomic.go`
-- [X] T009 [P] Define the provider interface and base `rbw` client primitives in `internal/provider/provider.go`, `internal/provider/bitwarden/rbw_client.go`, and `internal/provider/bitwarden/status.go`
-- [X] T010 Implement shared sync planning and change classification in `internal/sync/engine.go`
-- [X] T011 [P] Add reusable `rbw` stub wiring for integration tests in `test/integration/rbw_stub_test.go`, `test/testdata/provider/rbw-status-unlocked.txt`, and `test/testdata/provider/rbw-get-database-url.txt`
-- [X] T012 [P] Add benchmark helpers and 500-key fixtures in `test/integration/benchmark_helpers_test.go` and `test/testdata/env/large-schema.env.example`
+- [x] T005 Implement `.envsync.yaml` loading and default resolution in `internal/config/config.go`
+- [x] T006 [P] Implement shared output vocabulary, redaction, and exit-code helpers in `internal/report/output.go`, `internal/report/redact.go`, and `internal/report/exitcodes.go`
+- [x] T007 [P] Implement envfile domain types and token parsing in `internal/envfile/model.go` and `internal/envfile/parser.go`
+- [x] T008 [P] Implement deterministic writing, merge helpers, and atomic rewrites in `internal/envfile/writer.go`, `internal/envfile/merge.go`, and `internal/fs/atomic.go`
+- [x] T009 [P] Define the provider interface and base `rbw` client primitives in `internal/provider/provider.go`, `internal/provider/bitwarden/rbw_client.go`, and `internal/provider/bitwarden/status.go`
+- [x] T010 Implement shared sync planning and change classification in `internal/sync/engine.go`
+- [x] T011 [P] Add reusable `rbw` stub wiring for integration tests in `test/integration/rbw_stub_test.go`, `test/testdata/provider/rbw-status-unlocked.txt`, and `test/testdata/provider/rbw-get-database-url.txt`
+- [x] T012 [P] Add benchmark helpers and 500-key fixtures in `test/integration/benchmark_helpers_test.go` and `test/testdata/env/large-schema.env.example`
 
 **Checkpoint**: Foundation ready - user story implementation can now begin.
 
@@ -77,17 +76,17 @@ true no-op.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [X] T013 [P] [US1] Add CLI contract coverage for `ds sync` success, no-op, and `--dry-run` output in `test/contract/sync_contract_test.go`
-- [X] T014 [P] [US1] Add integration coverage for forward sync, static defaults, and no-op reruns in `test/integration/sync_command_test.go`
-- [X] T015 [P] [US1] Add unit coverage for forward planning and deterministic writer stability in `internal/sync/forward_test.go` and `internal/envfile/writer_test.go`
+- [x] T013 [P] [US1] Add CLI contract coverage for `ds sync` success, no-op, and `--dry-run` output in `test/contract/sync_contract_test.go`
+- [x] T014 [P] [US1] Add integration coverage for forward sync, static defaults, and no-op reruns in `test/integration/sync_command_test.go`
+- [x] T015 [P] [US1] Add unit coverage for forward planning and deterministic writer stability in `internal/sync/forward_test.go` and `internal/envfile/writer_test.go`
 
 ### Implementation for User Story 1
 
-- [X] T016 [P] [US1] Implement the `rbw`-backed Bitwarden resolution adapter and per-run caching in `internal/provider/bitwarden/adapter.go`
-- [X] T017 [US1] Implement forward-sync planning and apply logic in `internal/sync/forward.go`
-- [X] T018 [US1] Implement the `ds sync` command path in `internal/cli/sync.go`
-- [X] T019 [US1] Wire sync-specific status summaries and redacted rendering in `internal/report/output.go` and `internal/report/redact.go`
-- [X] T020 [US1] Add sync performance benchmarks and lookup-budget assertions in `internal/sync/forward_benchmark_test.go` and `test/integration/sync_benchmark_test.go`
+- [x] T016 [P] [US1] Implement the `rbw`-backed Bitwarden resolution adapter and per-run caching in `internal/provider/bitwarden/adapter.go`
+- [x] T017 [US1] Implement forward-sync planning and apply logic in `internal/sync/forward.go`
+- [x] T018 [US1] Implement the `ds sync` command path in `internal/cli/sync.go`
+- [x] T019 [US1] Wire sync-specific status summaries and redacted rendering in `internal/report/output.go` and `internal/report/redact.go`
+- [x] T020 [US1] Add sync performance benchmarks and lookup-budget assertions in `internal/sync/forward_benchmark_test.go` and `test/integration/sync_benchmark_test.go`
 
 **Checkpoint**: User Story 1 is independently functional, testable, and ready to demo.
 
@@ -106,16 +105,16 @@ CI-friendly results with correct exit codes.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [X] T021 [P] [US2] Add CLI contract coverage for `ds diff`, `ds validate`, and `ds missing` in `test/contract/diff_validate_contract_test.go`
-- [X] T022 [P] [US2] Add integration coverage for drift, duplicate keys, malformed files, and unresolved secrets in `test/integration/diff_validate_command_test.go`
-- [X] T023 [P] [US2] Add unit coverage for diff, validation, and missing-key classification in `internal/sync/diff_test.go`, `internal/sync/validate_test.go`, and `internal/sync/missing_test.go`
+- [x] T021 [P] [US2] Add CLI contract coverage for `ds diff`, `ds validate`, and `ds missing` in `test/contract/diff_validate_contract_test.go`
+- [x] T022 [P] [US2] Add integration coverage for drift, duplicate keys, malformed files, and unresolved secrets in `test/integration/diff_validate_command_test.go`
+- [x] T023 [P] [US2] Add unit coverage for diff, validation, and missing-key classification in `internal/sync/diff_test.go`, `internal/sync/validate_test.go`, and `internal/sync/missing_test.go`
 
 ### Implementation for User Story 2
 
-- [X] T024 [US2] Implement diff, validate, and missing planners in `internal/sync/diff.go`, `internal/sync/validate.go`, and `internal/sync/missing.go`
-- [X] T025 [US2] Implement `ds diff`, `ds validate`, and `ds missing` command handlers in `internal/cli/diff.go`, `internal/cli/validate.go`, and `internal/cli/missing.go`
-- [X] T026 [US2] Extend CI-friendly exit handling and preview formatting in `internal/report/output.go` and `internal/report/exitcodes.go`
-- [X] T027 [US2] Add diff and validate benchmark coverage for 500-key fixtures in `internal/sync/diff_benchmark_test.go` and `internal/sync/validate_benchmark_test.go`
+- [x] T024 [US2] Implement diff, validate, and missing planners in `internal/sync/diff.go`, `internal/sync/validate.go`, and `internal/sync/missing.go`
+- [x] T025 [US2] Implement `ds diff`, `ds validate`, and `ds missing` command handlers in `internal/cli/diff.go`, `internal/cli/validate.go`, and `internal/cli/missing.go`
+- [x] T026 [US2] Extend CI-friendly exit handling and preview formatting in `internal/report/output.go` and `internal/report/exitcodes.go`
+- [x] T027 [US2] Add diff and validate benchmark coverage for 500-key fixtures in `internal/sync/diff_benchmark_test.go` and `internal/sync/validate_benchmark_test.go`
 
 **Checkpoint**: User Stories 1 and 2 both work independently, with preview and validation flows ready for local use and CI.
 
@@ -135,16 +134,16 @@ writes only.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [X] T028 [P] [US3] Add CLI contract coverage for `ds doctor`, `ds init`, and `ds reverse` in `test/contract/doctor_init_reverse_contract_test.go`
-- [X] T029 [P] [US3] Add integration coverage for init schema generation, reverse-sync placeholders, and `rbw` prerequisite failures in `test/integration/doctor_init_reverse_test.go`
-- [X] T030 [P] [US3] Add unit coverage for provider readiness and schema-maintenance planning in `internal/provider/bitwarden/status_test.go` and `internal/envfile/merge_test.go`
+- [x] T028 [P] [US3] Add CLI contract coverage for `ds doctor`, `ds init`, and `ds reverse` in `test/contract/doctor_init_reverse_contract_test.go`
+- [x] T029 [P] [US3] Add integration coverage for init schema generation, reverse-sync placeholders, and `rbw` prerequisite failures in `test/integration/doctor_init_reverse_test.go`
+- [x] T030 [P] [US3] Add unit coverage for provider readiness and schema-maintenance planning in `internal/provider/bitwarden/status_test.go` and `internal/envfile/merge_test.go`
 
 ### Implementation for User Story 3
 
-- [X] T031 [US3] Implement `rbw` readiness checks and diagnostic mapping in `internal/provider/bitwarden/status.go`
-- [X] T032 [US3] Implement init and reverse-sync planning in `internal/sync/reverse.go` and `internal/envfile/merge.go`
-- [X] T033 [US3] Implement `ds doctor`, `ds init`, and `ds reverse` command handlers in `internal/cli/doctor.go`, `internal/cli/init.go`, and `internal/cli/reverse.go`
-- [X] T034 [US3] Validate no-secret schema writes and operator guidance with golden outputs in `test/testdata/golden/doctor-locked.txt`, `test/testdata/golden/init-preview.txt`, and `internal/report/output.go`
+- [x] T031 [US3] Implement `rbw` readiness checks and diagnostic mapping in `internal/provider/bitwarden/status.go`
+- [x] T032 [US3] Implement init and reverse-sync planning in `internal/sync/reverse.go` and `internal/envfile/merge.go`
+- [x] T033 [US3] Implement `ds doctor`, `ds init`, and `ds reverse` command handlers in `internal/cli/doctor.go`, `internal/cli/init.go`, and `internal/cli/reverse.go`
+- [x] T034 [US3] Validate no-secret schema writes and operator guidance with golden outputs in `test/testdata/golden/doctor-locked.txt`, `test/testdata/golden/init-preview.txt`, and `internal/report/output.go`
 
 **Checkpoint**: All three user stories are independently functional and maintain the schema contract safely.
 
@@ -154,11 +153,11 @@ writes only.
 
 **Purpose**: Complete documentation, regression coverage, and cross-story validation.
 
-- [X] T035 [P] Update user-facing command documentation in `README.md` and `specs/001-dotenv-sync-cli/quickstart.md`
-- [X] T036 [P] Run and tune regression benchmarks in `internal/sync/forward_benchmark_test.go`, `internal/sync/diff_benchmark_test.go`, and `internal/sync/validate_benchmark_test.go`
-- [X] T037 [P] Audit redaction and error-code consistency in `internal/report/redact.go`, `internal/report/output.go`, `test/contract/sync_contract_test.go`, `test/contract/diff_validate_contract_test.go`, and `test/contract/doctor_init_reverse_contract_test.go`
-- [X] T038 Validate cross-platform path, line-ending, and temp-file behavior in `internal/fs/atomic.go`, `internal/envfile/writer.go`, `test/integration/sync_command_test.go`, and `test/integration/doctor_init_reverse_test.go`
-- [X] T039 Run quickstart verification and refresh sample fixtures in `specs/001-dotenv-sync-cli/quickstart.md`, `test/testdata/env/basic.env.example`, `test/testdata/env/basic.env`, and `test/testdata/env/no-schema.env`
+- [x] T035 [P] Update user-facing command documentation in `README.md` and `specs/001-dotenv-sync-cli/quickstart.md`
+- [x] T036 [P] Run and tune regression benchmarks in `internal/sync/forward_benchmark_test.go`, `internal/sync/diff_benchmark_test.go`, and `internal/sync/validate_benchmark_test.go`
+- [x] T037 [P] Audit redaction and error-code consistency in `internal/report/redact.go`, `internal/report/output.go`, `test/contract/sync_contract_test.go`, `test/contract/diff_validate_contract_test.go`, and `test/contract/doctor_init_reverse_contract_test.go`
+- [x] T038 Validate cross-platform path, line-ending, and temp-file behavior in `internal/fs/atomic.go`, `internal/envfile/writer.go`, `test/integration/sync_command_test.go`, and `test/integration/doctor_init_reverse_test.go`
+- [x] T039 Run quickstart verification and refresh sample fixtures in `specs/001-dotenv-sync-cli/quickstart.md`, `test/testdata/env/basic.env.example`, `test/testdata/env/basic.env`, and `test/testdata/env/no-schema.env`
 
 ---
 

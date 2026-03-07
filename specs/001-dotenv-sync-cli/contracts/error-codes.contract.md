@@ -2,24 +2,24 @@
 
 ## Process Exit Codes
 
-| Exit Code | Meaning |
-|-----------|---------|
-| 0 | Command completed successfully, including no-op success |
-| 1 | Operational failure prevented the command from completing |
-| 2 | Validation or drift issue detected for user or CI action |
+| Exit Code | Meaning                                                   |
+| --------- | --------------------------------------------------------- |
+| 0         | Command completed successfully, including no-op success   |
+| 1         | Operational failure prevented the command from completing |
+| 2         | Validation or drift issue detected for user or CI action  |
 
 ## Operator-Visible Error Codes
 
-| Code | Condition | Recovery |
-|------|-----------|----------|
-| E001 | `rbw` CLI not installed | Install or expose `rbw` on `PATH`, then rerun `doctor` |
-| E002 | Not logged in to Bitwarden through `rbw` | Run `rbw login` and rerun the command |
-| E003 | Bitwarden database locked or unavailable | Run `rbw unlock` and retry |
-| E004 | Schema file missing | Create or point to `.env.example`, or use `init` |
-| E005 | Secret not found for schema key | Add the secret or mapping, then rerun |
-| E006 | Malformed `.env` or `.env.example` | Fix the file formatting and rerun `validate` |
-| E007 | Config file invalid | Correct `.envsync.yaml` and rerun `doctor` |
-| E008 | Duplicate schema key detected | Remove the duplicate and rerun `validate` |
+| Code | Condition                                | Recovery                                               |
+| ---- | ---------------------------------------- | ------------------------------------------------------ |
+| E001 | `rbw` CLI not installed                  | Install or expose `rbw` on `PATH`, then rerun `doctor` |
+| E002 | Not logged in to Bitwarden through `rbw` | Run `rbw login` and rerun the command                  |
+| E003 | Bitwarden database locked or unavailable | Run `rbw unlock` and retry                             |
+| E004 | Schema file missing                      | Create or point to `.env.example`, or use `init`       |
+| E005 | Secret not found for schema key          | Add the secret or mapping, then rerun                  |
+| E006 | Malformed `.env` or `.env.example`       | Fix the file formatting and rerun `validate`           |
+| E007 | Config file invalid                      | Correct `.envsync.yaml` and rerun `doctor`             |
+| E008 | Duplicate schema key detected            | Remove the duplicate and rerun `validate`              |
 
 ## Reporting Rules
 

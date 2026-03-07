@@ -52,6 +52,7 @@ mapping:
 ```
 
 Expected result:
+
 - Reports whether `rbw` is installed.
 - Reports whether the user is logged in and the database is unlocked.
 - Does not print any secret values.
@@ -63,6 +64,7 @@ Expected result:
 ```
 
 Expected result:
+
 - Shows only real additions or updates.
 - Marks unresolved keys without leaking values.
 - Leaves `.env` unchanged.
@@ -74,6 +76,7 @@ Expected result:
 ```
 
 Expected result:
+
 - Creates or updates `.env`.
 - Copies safe defaults from `.env.example`.
 - Resolves blank schema entries from Bitwarden through `rbw`.
@@ -88,6 +91,7 @@ Expected result:
 ```
 
 Expected result:
+
 - `diff` previews differences across schema, local env, and resolved provider values.
 - `validate` exits non-zero when drift, malformed files, or missing values exist.
 - `missing` lists unresolved keys in a redacted, CI-friendly format.
@@ -101,6 +105,7 @@ Expected result:
 ```
 
 Expected result:
+
 - `init` creates `.env.example` from `.env` while blanking secret values.
 - `reverse --dry-run` previews schema additions only.
 - `reverse` writes new blank placeholders back to `.env.example` without
@@ -115,6 +120,7 @@ go test ./... -bench . -run '^$'
 ```
 
 Expected result:
+
 - Unit tests verify parsing, writing, provider, and orchestration behavior.
 - Contract tests verify command semantics, exit codes, and output vocabulary.
 - Benchmarks confirm the sync, diff, and validate paths meet the documented
@@ -134,6 +140,7 @@ Expected result:
 ```
 
 Expected result:
+
 - `doctor` verifies `rbw` availability and unlock state with actionable recovery
   guidance.
 - `sync` writes `.env` from `.env.example` while preserving deterministic file

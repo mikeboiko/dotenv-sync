@@ -1,0 +1,17 @@
+pre-commit:
+  parallel: True
+  skip:
+    - rebase
+  commands:
+    prettier-format:
+      glob: '**/*.{js,jsx,ts,tsx,json,css,scss,md,yaml,yml}'
+      run: |
+        echo "Formatting files with prettier..."
+        npx prettier --write {staged_files}
+      stage_fixed: true
+    go-format:
+      glob: '**/*.go'
+      run: |
+        echo "Formatting Go files with gofmt..."
+        gofmt -w {staged_files}
+      stage_fixed: true

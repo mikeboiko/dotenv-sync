@@ -23,17 +23,20 @@
 and provider-backed secret resolution.
 
 **Inputs**:
+
 - `--dry-run` to preview without writing
 - `--config PATH` to override `.envsync.yaml`
 - `--schema PATH` and `--env PATH` for explicit file overrides
 
 **Behavior**:
+
 - Reads `.env.example` as the schema contract.
 - Copies explicit defaults directly into `.env`.
 - Resolves blank schema values from the provider.
 - Preserves comments, ordering, and line endings whenever possible.
 
 **Success outputs**:
+
 - `SYNC CHECKED`
 - `SYNC WRITTEN`
 - `SYNC UNCHANGED`
@@ -44,6 +47,7 @@ and provider-backed secret resolution.
 resolved provider values without writing files.
 
 **Behavior**:
+
 - Highlights adds, updates, unchanged entries, extras, and unresolved values.
 - Shows only real mutations.
 - Keeps secret values redacted.
@@ -54,6 +58,7 @@ resolved provider values without writing files.
 provider resolution readiness.
 
 **Behavior**:
+
 - Returns exit code `0` when no blocking issues exist.
 - Returns exit code `2` when drift, malformed input, duplicates, or
   unresolved secrets are detected.
@@ -65,6 +70,7 @@ provider resolution readiness.
 sync.
 
 **Behavior**:
+
 - Checks config readability.
 - Checks `rbw` presence.
 - Checks login and unlock state.
@@ -75,6 +81,7 @@ sync.
 **Purpose**: Generate `.env.example` from an existing `.env`.
 
 **Behavior**:
+
 - Copies safe explicit defaults into the schema.
 - Blanks secret-looking values before writing.
 - Preserves user comments and ordering when source formatting allows.
@@ -85,6 +92,7 @@ sync.
 provider.
 
 **Behavior**:
+
 - Outputs the unresolved keys only.
 - Returns exit code `2` when any key is unresolved.
 - Does not print resolved secret content.
@@ -95,9 +103,11 @@ provider.
 placeholders.
 
 **Inputs**:
+
 - `--dry-run` to preview schema changes before writing
 
 **Behavior**:
+
 - Adds missing schema keys in a deterministic order.
 - Writes blank placeholders only.
 - Preserves existing comments and ordering wherever possible.

@@ -27,6 +27,7 @@ Success output communicates three elements in a predictable order:
 3. A compact summary of counts or next steps
 
 Example:
+
 - `WRITTEN .env (added: 2, updated: 1, unchanged: 3)`
 - `UNCHANGED .env (already up to date)`
 
@@ -35,6 +36,7 @@ Example:
 Preview output lists only real mutations and unresolved keys.
 
 Example:
+
 - `ADD DATABASE_URL [RESOLVED]`
 - `UPDATE JWT_SECRET [RESOLVED]`
 - `UNCHANGED PORT [STATIC]`
@@ -49,6 +51,7 @@ Every actionable failure includes:
 - `Action`: how to recover
 
 Example:
+
 - `Problem: Bitwarden database is locked`
 - `Impact: sync cannot resolve provider-managed schema keys`
 - `Action: run 'rbw unlock' and retry`
