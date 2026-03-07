@@ -219,7 +219,6 @@ clear diagnostic result.
   prerequisite scenarios are identified before application startup through the
   tool's preview, validation, missing, or diagnostic flows.
 
-
 ## Future Roadmap
 
 - Add support for the official `bw` CLI as an alternate Bitwarden integration

@@ -21,6 +21,7 @@ Derived guidance updates:
 Follow-up TODOs:
 - None
 -->
+
 # dotenv-sync Constitution
 
 ## Core Principles
