@@ -27,6 +27,16 @@ go.work.sum
 # env file
 .env
 
+# Build output
+/bin/
+vendor/
+
 # Other
 /tags
 tags.*
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
