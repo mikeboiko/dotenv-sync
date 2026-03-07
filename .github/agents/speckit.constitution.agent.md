@@ -43,10 +43,11 @@ Follow this execution flow:
    - Ensure Governance section lists amendment procedure, versioning policy, and compliance review expectations.
 
 4. Consistency propagation checklist (convert prior checklist into active validations):
+   - Read `.specify/memory/constitution-checks.json` and keep it synchronized as the derived operational checklist for plan/spec/task/command guidance.
    - Read `.specify/templates/plan-template.md` and ensure any "Constitution Check" or rules align with updated principles.
    - Read `.specify/templates/spec-template.md` for scope/requirements alignment—update if constitution adds/removes mandatory sections or constraints.
    - Read `.specify/templates/tasks-template.md` and ensure task categorization reflects new or removed principle-driven task types (e.g., observability, versioning, testing discipline).
-   - Read each command file in `.specify/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
+   - If `.specify/templates/commands/` does not exist, create it. Then read each command file in `.specify/templates/commands/*.md` (including this one) to verify no outdated references (agent-specific names like CLAUDE only) remain when generic guidance is required.
    - Read any runtime guidance docs (e.g., `README.md`, `docs/quickstart.md`, or agent-specific guidance files if present). Update references to principles changed.
 
 5. Produce a Sync Impact Report (prepend as an HTML comment at top of the constitution file after update):
@@ -55,6 +56,7 @@ Follow this execution flow:
    - Added sections
    - Removed sections
    - Templates requiring updates (✅ updated / ⚠ pending) with file paths
+   - Derived guidance updates with file paths
    - Follow-up TODOs if any placeholders intentionally deferred.
 
 6. Validation before final output:

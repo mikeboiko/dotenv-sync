@@ -1,25 +1,23 @@
 <!--
 Sync Impact Report
-Version change: unratified template -> 1.0.0
+Version change: 1.0.0 -> 1.0.1
 Modified principles:
-- Template principle slot 1 -> I. Workflow-Preserving Architecture
-- Template principle slot 2 -> II. Deterministic Env File Fidelity
-- Template principle slot 3 -> III. Test-First Reliability
-- Template principle slot 4 -> IV. Consistent UX and Secret-Safe Output
-- Template principle slot 5 -> V. Performance Budgets and Minimal Dependencies
+- None
 Added sections:
-- Product Constraints
-- Delivery Workflow & Quality Gates
+- None
 Removed sections:
 - None
 Templates requiring updates:
 - ✅ updated: .specify/templates/plan-template.md
-- ✅ updated: .specify/templates/spec-template.md
 - ✅ updated: .specify/templates/tasks-template.md
-- ⚠ pending: .specify/templates/commands/*.md (directory absent; no command templates to validate)
+- ✅ reviewed: .specify/templates/commands/ (directory created; no command templates yet)
 Runtime guidance updates:
+- ✅ updated: .github/agents/speckit.constitution.agent.md
+- ✅ updated: .github/agents/speckit.plan.agent.md
 - ✅ updated: .github/agents/speckit.specify.agent.md
 - ✅ updated: .github/agents/speckit.tasks.agent.md
+Derived guidance updates:
+- ✅ added: .specify/memory/constitution-checks.json
 Follow-up TODOs:
 - None
 -->
@@ -116,7 +114,10 @@ fast feedback, low installation friction, and predictable maintenance cost.
 This constitution overrides conflicting guidance in repository templates, agent
 instructions, and supporting docs. Amendments MUST update this file and all
 affected dependent artifacts in the same change, including a refreshed Sync
-Impact Report at the top of the constitution.
+Impact Report at the top of the constitution. The derived checklist at
+`.specify/memory/constitution-checks.json` is the operational source for plan,
+spec, task, and command-template compliance and MUST be updated in the same
+change whenever this constitution changes.
 
 Versioning follows semantic rules for governance: MAJOR for removing or
 redefining principles in incompatible ways, MINOR for new principles or
@@ -125,4 +126,4 @@ expected behavior. Compliance review MUST happen in every plan, spec, task list,
 and code review touching this project, and unresolved constitution violations
 MUST be documented explicitly and approved before implementation proceeds.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-07 | **Last Amended**: 2026-03-07
+**Version**: 1.0.1 | **Ratified**: 2026-03-07 | **Last Amended**: 2026-03-07
