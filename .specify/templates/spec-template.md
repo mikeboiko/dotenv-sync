@@ -75,6 +75,22 @@
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
 
+## User Experience Consistency *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Define the operator-visible behavior that must stay
+  consistent across commands and failure modes.
+-->
+
+- **UX-001**: Command output MUST use [shared status vocabulary] for
+  [operation type or flow]
+- **UX-002**: Errors MUST explain [prerequisite/problem] and the next recovery
+  action
+- **UX-003**: Secret-bearing values MUST be [redacted/presence-only] in logs,
+  diffs, previews, and diagnostics
+- **UX-004**: Dry-run and diff behavior MUST [state how the user can trust the
+  preview]
+
 ## Requirements *(mandatory)*
 
 <!--
@@ -99,6 +115,19 @@
 
 - **[Entity 1]**: [What it represents, key attributes without implementation]
 - **[Entity 2]**: [What it represents, relationships to other entities]
+
+## Performance Requirements *(mandatory)*
+
+<!--
+  ACTION REQUIRED: Define measurable latency, efficiency, or resource budgets.
+  These must be specific enough to validate in tests or benchmarks.
+-->
+
+- **PR-001**: [Local operation] MUST complete within [metric and dataset]
+- **PR-002**: [Provider-backed operation] MUST use no more than [lookup or
+  request budget]
+- **PR-003**: [Resource usage or throughput expectation] MUST stay within
+  [limit]
 
 ## Success Criteria *(mandatory)*
 
