@@ -14,6 +14,20 @@ func writeRBWStub(t *testing.T, status string, get map[string]string, missing ..
 	var script strings.Builder
 	script.WriteString("#!/bin/sh\n")
 	script.WriteString("case \"$1\" in\n")
+	switch status {
+	case "unlocked":
+		script.WriteString("unlocked) exit 0 ;;\n")
+		script.WriteString("list) printf 'DATABASE_URL\\nJWT_SECRET\\n' ;;\n")
+	case "locked":
+		script.WriteString("unlocked) exit 1 ;;\n")
+		script.WriteString("list) echo 'database is locked' >&2; exit 1 ;;\n")
+	case "logged out":
+		script.WriteString("unlocked) exit 1 ;;\n")
+		script.WriteString("list) echo 'not logged in' >&2; exit 1 ;;\n")
+	default:
+		script.WriteString("unlocked) exit 1 ;;\n")
+		script.WriteString(fmt.Sprintf("list) printf '%%s\\n' '%s' ;;\n", status))
+	}
 	script.WriteString(fmt.Sprintf("status) printf '%%s\\n' '%s' ;;\n", status))
 	script.WriteString("get)\ncase \"$2\" in\n")
 	for key, value := range get {
@@ -23,7 +37,6 @@ func writeRBWStub(t *testing.T, status string, get map[string]string, missing ..
 		script.WriteString(fmt.Sprintf("%s) echo 'not found' >&2; exit 1 ;;\n", key))
 	}
 	script.WriteString("*) echo 'not found' >&2; exit 1 ;;\nesac\n;;\n")
-	script.WriteString("list) printf 'DATABASE_URL\\nJWT_SECRET\\n' ;;\n")
 	script.WriteString("*) echo 'unsupported' >&2; exit 1 ;;\nesac\n")
 	path := filepath.Join(stubDir, "rbw")
 	writeFile(t, path, script.String())
