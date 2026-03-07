@@ -103,7 +103,8 @@ ds sync --dry-run
 - Reads `.env.example` as the schema contract
 - Resolves blank entries through `rbw`
 - Preserves comment order and line endings when rewriting `.env`
-- Produces `CHECKED`, `UNCHANGED`, `WRITTEN`, and `MISSING` output vocabulary
+- Produces `WRITTEN`, `UNCHANGED`, and `MISSING` output vocabulary for sync runs
+- Uses `CHECKED` summaries for dry-run previews
 
 ### `ds diff`
 
@@ -173,3 +174,8 @@ go test ./...
 go test ./... -run TestContract
 go test ./... -bench . -run '^$'
 ```
+
+## CI
+
+GitHub Actions runs `go test ./...` on every push via
+`.github/workflows/go-tests.yml`.

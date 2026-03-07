@@ -37,7 +37,7 @@ and provider-backed secret resolution.
 
 **Success outputs**:
 
-- `SYNC CHECKED`
+- `SYNC CHECKED` for dry-run previews only
 - `SYNC WRITTEN`
 - `SYNC UNCHANGED`
 

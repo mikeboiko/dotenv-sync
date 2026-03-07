@@ -25,7 +25,6 @@ func newSyncCommand(s streams, opts *rootOptions) *cobra.Command {
 			if err != nil && errors.As(err, &appErr) {
 				return err
 			}
-			fmt.Fprintln(s.stdout, report.SummaryLine(report.StatusChecked, "provider", report.Summary{}, "rbw ready"))
 			for _, change := range plan.Changes {
 				if dryRun || change.ChangeType == "missing" {
 					fmt.Fprintln(s.stdout, report.ChangeLine(change.ChangeType, change.Key, change.After))

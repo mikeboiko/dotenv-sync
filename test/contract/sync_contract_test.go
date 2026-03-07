@@ -32,6 +32,9 @@ func TestContractSync(t *testing.T) {
 	if code != 0 || stderr != "" {
 		t.Fatalf("sync failed: code=%d stderr=%q", code, stderr)
 	}
+	if strings.Contains(stdout, "CHECKED provider") {
+		t.Fatalf("sync stdout should not include provider checked line: %s", stdout)
+	}
 	data, err := os.ReadFile(filepath.Join(project, ".env"))
 	if err != nil {
 		t.Fatal(err)
