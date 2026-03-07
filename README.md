@@ -22,6 +22,59 @@ The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 go build -o ./bin/ds ./cmd/ds
 ```
 
+## Add `ds` to your `PATH`
+
+You can always run the binary directly as `./bin/ds` (or `bin\ds.exe` on
+Windows), but for a normal `ds ...` workflow you can either add the build
+directory to your `PATH` or copy/symlink the binary into a directory that is
+already on your `PATH`.
+
+### POSIX shells (`bash`, `zsh`, `sh`)
+
+Add your build directory to a shell startup file such as `~/.profile`,
+`~/.bashrc`, or `~/.zshrc`:
+
+```bash
+export PATH="$PATH:/absolute/path/to/dotenv-sync/bin"
+```
+
+Reload the file or open a new shell:
+
+```bash
+source ~/.bashrc
+```
+
+### `fish`
+
+```fish
+fish_add_path /absolute/path/to/dotenv-sync/bin
+```
+
+### PowerShell
+
+For the current session:
+
+```powershell
+$env:Path += ";C:\absolute\path\to\dotenv-sync\bin"
+```
+
+For a persistent install, add the same directory through your system PATH
+settings or place `ds.exe` in a directory that is already on PATH.
+
+### Alternative: copy or symlink the binary
+
+Examples:
+
+```bash
+ln -s /absolute/path/to/dotenv-sync/bin/ds ~/.local/bin/ds
+```
+
+or:
+
+```bash
+install -Dm755 ./bin/ds ~/.local/bin/ds
+```
+
 ## Configuration
 
 `.envsync.yaml` is optional:

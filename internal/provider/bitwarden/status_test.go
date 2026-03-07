@@ -20,19 +20,51 @@ func TestCheckReadinessWithMissingBinary(t *testing.T) {
 func TestCheckReadinessWithStubStatuses(t *testing.T) {
 	cases := []struct {
 		name   string
-		status string
+		script string
 		code   string
 	}{
-		{name: "unlocked", status: "unlocked", code: ""},
-		{name: "locked", status: "locked", code: "E003"},
-		{name: "logged-out", status: "logged out", code: "E002"},
+		{
+			name: "unlocked",
+			script: "#!/bin/sh\ncase \"$1\" in\n" +
+				"unlocked) exit 0 ;;\n" +
+				"list) printf 'DATABASE_URL\\n' ;;\n" +
+				"*) exit 1 ;;\n" +
+				"esac\n",
+			code: "",
+		},
+		{
+			name: "locked",
+			script: "#!/bin/sh\ncase \"$1\" in\n" +
+				"unlocked) exit 1 ;;\n" +
+				"list) echo 'database is locked' >&2; exit 1 ;;\n" +
+				"*) exit 1 ;;\n" +
+				"esac\n",
+			code: "E003",
+		},
+		{
+			name: "logged-out",
+			script: "#!/bin/sh\ncase \"$1\" in\n" +
+				"unlocked) exit 1 ;;\n" +
+				"list) echo 'not logged in' >&2; exit 1 ;;\n" +
+				"*) exit 1 ;;\n" +
+				"esac\n",
+			code: "E002",
+		},
+		{
+			name: "legacy-status-fallback",
+			script: "#!/bin/sh\ncase \"$1\" in\n" +
+				"unlocked) echo \"error: unrecognized subcommand 'unlocked'\" >&2; exit 2 ;;\n" +
+				"status) printf 'unlocked\\n' ;;\n" +
+				"*) exit 1 ;;\n" +
+				"esac\n",
+			code: "",
+		},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			dir := t.TempDir()
 			bin := filepath.Join(dir, "rbw")
-			script := "#!/bin/sh\nif [ \"$1\" = \"status\" ]; then printf '%s\\n' '" + tc.status + "'; exit 0; fi\nexit 1\n"
-			if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+			if err := os.WriteFile(bin, []byte(tc.script), 0o755); err != nil {
 				t.Fatal(err)
 			}
 			status, err := checkReadinessWithClient(context.Background(), &RBWClient{Bin: bin})
