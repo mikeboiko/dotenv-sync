@@ -31,23 +31,12 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- **Workflow Preservation**: Confirm the feature keeps `.env` as the
-  developer-facing configuration file and does not introduce runtime command
-  wrapping, injection, or schema drift away from `.env.example`.
-- **Module Boundaries**: Confirm CLI routing, envfile parsing/writing, sync
-  orchestration, and provider integrations remain in focused packages with
-  explicit interfaces.
-- **Deterministic File Fidelity**: Confirm comments, ordering, no-op stability,
-  and dry-run/diff behavior are designed and testable for every file mutation
-  path.
-- **Required Automated Tests**: Identify failing-first unit plus integration or
-  CLI tests for affected behavior, including provider failures and redaction
-  paths.
-- **UX Consistency & Secret Safety**: Define consistent status/error wording,
-  actionable recovery guidance, exit-code behavior, and secret redaction rules.
-- **Performance & Dependency Budget**: Confirm local file operations stay within
-  the constitution budget and justify each new dependency or provider lookup
-  cost.
+Load `.specify/memory/constitution-checks.json` and replace the table below with
+one row per applicable check.
+
+| Check ID | Status | Evidence |
+|----------|--------|----------|
+| [e.g., workflow-preservation] | [PASS/FAIL] | [cite the plan section or justify the exception] |
 
 ## Project Structure
 

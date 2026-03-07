@@ -8,9 +8,13 @@ description: "Task list template for feature implementation"
 **Input**: Design documents from `/specs/[###-feature-name]/`
 **Prerequisites**: plan.md (required), spec.md (required for user stories), research.md, data-model.md, contracts/
 
-**Tests**: Tests are REQUIRED. Include unit plus integration, contract, or CLI
-coverage for every user story, plus negative-path cases for provider failures,
-redaction, and deterministic file behavior when those surfaces are affected.
+**Tests**: Tests are REQUIRED. Load the applicable checks from
+`.specify/memory/constitution-checks.json` and include the failing automated
+coverage needed to satisfy them.
+
+**Constitution Coverage**: Setup, foundational, story, and polish phases MUST
+collectively cover every applicable check ID from
+`.specify/memory/constitution-checks.json`.
 
 **Organization**: Tasks are grouped by user story to enable independent
 implementation, testing, and constitution compliance validation for each story.
@@ -257,7 +261,7 @@ With multiple developers:
 - [Story] label maps task to specific user story for traceability
 - Each user story should be independently completable and testable
 - Verify tests fail before implementing
-- Validate UX copy, redaction, and performance budgets before closing a story
+- Validate applicable constitution checks before closing a story
 - Commit after each task or logical group
 - Stop at any checkpoint to validate story independently
 - Avoid: vague tasks, same file conflicts, cross-story dependencies that break independence

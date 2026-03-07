@@ -114,15 +114,14 @@ Given that feature description, do this:
       - [ ] No implementation details (languages, frameworks, APIs)
       - [ ] Focused on user value and business needs
       - [ ] Written for non-technical stakeholders
-      - [ ] All mandatory sections completed, including UX consistency and performance requirements
+      - [ ] All mandatory sections and applicable constitution-derived sections from `.specify/memory/constitution-checks.json` are completed
       
       ## Requirement Completeness
       
       - [ ] No [NEEDS CLARIFICATION] markers remain
       - [ ] Requirements are testable and unambiguous
       - [ ] Success criteria are measurable
-      - [ ] UX consistency rules are explicit, actionable, and secret-safe
-      - [ ] Performance requirements are quantified and measurable
+      - [ ] Applicable constitution checks from `.specify/memory/constitution-checks.json` are represented in the spec
       - [ ] Success criteria are technology-agnostic (no implementation details)
       - [ ] All acceptance scenarios are defined
       - [ ] Edge cases are identified
