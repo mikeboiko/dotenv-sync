@@ -3,22 +3,25 @@
 ## Goal
 
 Validate the planned cross-platform Go CLI workflow for syncing `.env` files
-from `.env.example` and Bitwarden without changing normal developer commands.
+from `.env.example` and Bitwarden through `rbw` without changing normal
+developer commands.
 
 ## Prerequisites
 
-1. Go 1.26 or newer is installed.
-2. Bitwarden CLI (`bw`) is installed and available on `PATH`.
-3. The user is logged in to Bitwarden and can unlock the target vault.
-4. The repository contains the planned source tree and command implementations.
+1. Go 1.22 or newer is installed.
+2. `rbw` is installed and available on `PATH`.
+3. The user is logged in to Bitwarden through `rbw` and can unlock the local
+   Bitwarden database.
+4. The repository contains the planned source tree and command
+   implementations.
 
 ## 1. Build the CLI
 
 ```bash
-go build -o ./bin/dotenv-sync ./cmd/dotenv-sync
+go build -o ./bin/ds ./cmd/ds
 ```
 
-On Windows, the binary path becomes `bin\dotenv-sync.exe`.
+On Windows, the binary path becomes `bin\ds.exe`.
 
 ## 2. Prepare a sample project
 
@@ -45,18 +48,18 @@ mapping:
 ## 3. Verify prerequisites
 
 ```bash
-./bin/dotenv-sync doctor
+./bin/ds doctor
 ```
 
 Expected result:
-- Reports whether the Bitwarden CLI is installed.
-- Reports whether the user is logged in and the vault is unlocked.
+- Reports whether `rbw` is installed.
+- Reports whether the user is logged in and the database is unlocked.
 - Does not print any secret values.
 
 ## 4. Preview the sync without writing files
 
 ```bash
-./bin/dotenv-sync sync --dry-run
+./bin/ds sync --dry-run
 ```
 
 Expected result:
@@ -67,21 +70,21 @@ Expected result:
 ## 5. Write the local environment file
 
 ```bash
-./bin/dotenv-sync sync
+./bin/ds sync
 ```
 
 Expected result:
 - Creates or updates `.env`.
 - Copies safe defaults from `.env.example`.
-- Resolves blank schema entries from Bitwarden.
+- Resolves blank schema entries from Bitwarden through `rbw`.
 - Preserves comments, ordering, and existing line endings when possible.
 
 ## 6. Inspect drift and unresolved values
 
 ```bash
-./bin/dotenv-sync diff
-./bin/dotenv-sync validate
-./bin/dotenv-sync missing
+./bin/ds diff
+./bin/ds validate
+./bin/ds missing
 ```
 
 Expected result:
@@ -92,9 +95,9 @@ Expected result:
 ## 7. Bootstrap or maintain the schema
 
 ```bash
-./bin/dotenv-sync init
-./bin/dotenv-sync reverse --dry-run
-./bin/dotenv-sync reverse
+./bin/ds init
+./bin/ds reverse --dry-run
+./bin/ds reverse
 ```
 
 Expected result:

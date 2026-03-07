@@ -29,8 +29,13 @@ The initial Go interface is expected to support these behaviors:
 
 ## Bitwarden-Specific Expectations
 
-- Readiness checks use the `bw` CLI directly.
+- Readiness checks use the `rbw` CLI directly.
 - Mapping may point a schema key to a custom Bitwarden item or field reference.
 - The adapter caches repeated lookups within a command to satisfy the
   performance budget.
 - Unlock and login failures surface actionable recovery guidance.
+
+## Roadmap Note
+
+- Future roadmap work may add a `bw`-backed Bitwarden client behind the same
+  provider interface without changing sync-engine contracts.
