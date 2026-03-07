@@ -49,6 +49,6 @@ Every actionable failure includes:
 - `Action`: how to recover
 
 Example:
-- `Problem: Bitwarden vault is locked`
+- `Problem: Bitwarden database is locked`
 - `Impact: sync cannot resolve provider-managed schema keys`
-- `Action: run 'bw unlock' and retry`
+- `Action: run 'rbw unlock' and retry`

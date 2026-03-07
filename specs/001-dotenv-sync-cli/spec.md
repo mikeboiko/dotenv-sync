@@ -3,7 +3,7 @@
 **Feature Branch**: `001-dotenv-sync-cli`
 **Created**: 2026-03-07
 **Status**: Draft
-**Input**: User description: "Build a CLI application that synchronizes a project's `.env` from `.env.example` using a password manager as the secret source, initially Bitwarden, while preserving the standard developer workflow and providing sync, diff, validate, doctor, init, and schema-maintenance flows."
+**Input**: User description: "Build a CLI application that synchronizes a project's `.env` from `.env.example` using Bitwarden as the secret source through the `rbw` CLI, while preserving the standard developer workflow, shipping `ds` as the default binary name, and providing sync, diff, validate, doctor, init, and schema-maintenance flows."
 
 ## User Scenarios & Testing _(mandatory)_
 
@@ -17,9 +17,10 @@ workflow.
 **Why this priority**: This is the core product promise and the minimum outcome
 that makes the tool valuable on day one.
 
-**Independent Test**: In a project with a valid `.env.example`, accessible
-Bitwarden secrets, and no existing `.env`, a user can run the sync flow once and
-receive a usable `.env` file without wrapping any later application commands.
+**Independent Test**: In a project with a valid `.env.example`, Bitwarden
+secrets reachable through `rbw`, and no existing `.env`, a user can run the
+sync flow once and receive a usable `.env` file without wrapping any later
+application commands.
 
 **Acceptance Scenarios**:
 
@@ -116,8 +117,9 @@ clear diagnostic result.
   explicit values represent safe defaults that may be copied as written.
 - Reverse sync is opt-in and is limited to adding blank placeholders for new
   keys discovered in `.env`.
-- Bitwarden is the initial provider available out of the box, and future
-  providers will be added without changing the standard `.env` workflow.
+- Bitwarden is the initial provider available out of the box through the
+  `rbw` CLI, and future providers will be added without changing the standard
+  `.env` workflow.
 
 ## User Experience Consistency _(mandatory)_
 
@@ -143,8 +145,9 @@ clear diagnostic result.
 - **FR-003**: Users MUST be able to produce a usable local `.env` without
   wrapping their normal application commands or changing how tools already load
   `.env` files.
-- **FR-004**: The system MUST support Bitwarden as the initial secret source and
-  MUST verify prerequisite states required to retrieve secrets.
+- **FR-004**: The system MUST support Bitwarden as the initial secret source
+  through the `rbw` CLI and MUST verify prerequisite states required to
+  retrieve secrets.
 - **FR-005**: The system MUST provide a dry-run preview before writing changes
   so users can understand what will happen in advance.
 - **FR-006**: The system MUST provide diff and validate flows that identify
@@ -168,8 +171,10 @@ clear diagnostic result.
   values.
 - **FR-013**: The system MUST produce machine-usable success and failure
   outcomes so local automation and CI can rely on validate and diagnostic flows.
-- **FR-014**: The system MUST keep schema-maintenance flows from writing secret
-  values into `.env.example`.
+- **FR-014**: The system MUST keep schema-maintenance flows from writing
+  secret values into `.env.example`.
+- **FR-015**: Users MUST be able to invoke the tool through the default `ds`
+  executable name for all documented MVP workflows.
 
 ### Key Entities _(include if feature involves data)_
 
@@ -213,3 +218,9 @@ clear diagnostic result.
 - **SC-004**: At least 90% of seeded schema-drift, missing-secret, or missing-
   prerequisite scenarios are identified before application startup through the
   tool's preview, validation, missing, or diagnostic flows.
+
+
+## Future Roadmap
+
+- Add support for the official `bw` CLI as an alternate Bitwarden integration
+  path after the `rbw`-backed MVP is established.

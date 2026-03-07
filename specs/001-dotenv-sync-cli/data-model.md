@@ -51,7 +51,7 @@ Represents optional project configuration from `.envsync.yaml`.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| provider | string | Selected provider name, defaulting to `bitwarden` |
+| provider | string | Selected provider family, defaulting to `bitwarden` and implemented through `rbw` in the MVP |
 | schemaFile | string | Override path for `.env.example` |
 | envFile | string | Override path for `.env` |
 | vault | string | Optional vault or collection hint |
@@ -69,13 +69,13 @@ Represents current readiness of the configured secret provider.
 | Field | Type | Description |
 |-------|------|-------------|
 | provider | string | Provider name under test |
-| cliInstalled | bool | Whether the provider CLI is available |
+| cliInstalled | bool | Whether the `rbw` CLI required for Bitwarden access is available |
 | authenticated | bool | Whether the user is signed in |
 | unlocked | bool | Whether the vault is unlocked and readable |
 | message | string | Human-readable diagnostic summary |
 
 **State transitions**:
-- `unknown -> unavailable` when the CLI binary cannot be found.
+- `unknown -> unavailable` when the `rbw` binary cannot be found.
 - `unknown -> installed` when the CLI is present.
 - `installed -> authenticated` when login state is confirmed.
 - `authenticated -> unlocked` when secrets can be queried.

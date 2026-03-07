@@ -2,9 +2,12 @@
 
 ## Global Rules
 
+- Default executable name: `ds`
+- Product and repository name remain `dotenv-sync`
 - Default schema file: `.env.example`
 - Default local env file: `.env`
 - Default config file: `.envsync.yaml`
+- Bitwarden access uses the `rbw` CLI in the MVP.
 - Standard output carries normal status and preview information.
 - Standard error carries actionable failures.
 - Secret values are never printed; command output uses redacted or status-only
@@ -16,8 +19,8 @@
 
 ## sync
 
-**Purpose**: Create or update `.env` from `.env.example`, optional config, and
-provider-backed secret resolution.
+**Purpose**: Create or update `.env` from `.env.example`, optional config,
+and provider-backed secret resolution.
 
 **Inputs**:
 - `--dry-run` to preview without writing
@@ -37,8 +40,8 @@ provider-backed secret resolution.
 
 ## diff
 
-**Purpose**: Show redacted differences between schema, local env, and resolved
-provider values without writing files.
+**Purpose**: Show redacted differences between schema, local env, and
+resolved provider values without writing files.
 
 **Behavior**:
 - Highlights adds, updates, unchanged entries, extras, and unresolved values.
@@ -52,17 +55,18 @@ provider resolution readiness.
 
 **Behavior**:
 - Returns exit code `0` when no blocking issues exist.
-- Returns exit code `2` when drift, malformed input, duplicates, or unresolved
-  secrets are detected.
+- Returns exit code `2` when drift, malformed input, duplicates, or
+  unresolved secrets are detected.
 - Returns exit code `1` for provider or I/O failures that prevent validation.
 
 ## doctor
 
-**Purpose**: Diagnose provider and local-environment prerequisites before sync.
+**Purpose**: Diagnose provider and local-environment prerequisites before
+sync.
 
 **Behavior**:
 - Checks config readability.
-- Checks provider CLI presence.
+- Checks `rbw` presence.
 - Checks login and unlock state.
 - Reports problem, impact, and next action for each failure.
 
