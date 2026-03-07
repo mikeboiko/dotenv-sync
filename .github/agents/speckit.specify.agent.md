@@ -114,13 +114,15 @@ Given that feature description, do this:
       - [ ] No implementation details (languages, frameworks, APIs)
       - [ ] Focused on user value and business needs
       - [ ] Written for non-technical stakeholders
-      - [ ] All mandatory sections completed
+      - [ ] All mandatory sections completed, including UX consistency and performance requirements
       
       ## Requirement Completeness
       
       - [ ] No [NEEDS CLARIFICATION] markers remain
       - [ ] Requirements are testable and unambiguous
       - [ ] Success criteria are measurable
+      - [ ] UX consistency rules are explicit, actionable, and secret-safe
+      - [ ] Performance requirements are quantified and measurable
       - [ ] Success criteria are technology-agnostic (no implementation details)
       - [ ] All acceptance scenarios are defined
       - [ ] Edge cases are identified
@@ -130,8 +132,8 @@ Given that feature description, do this:
       ## Feature Readiness
       
       - [ ] All functional requirements have clear acceptance criteria
-      - [ ] User scenarios cover primary flows
-      - [ ] Feature meets measurable outcomes defined in Success Criteria
+      - [ ] User scenarios cover primary flows and recovery/error paths
+      - [ ] Feature meets measurable outcomes defined in Success Criteria and performance requirements
       - [ ] No implementation details leak into specification
       
       ## Notes
