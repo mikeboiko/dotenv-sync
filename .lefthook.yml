@@ -15,3 +15,13 @@ pre-commit:
         echo "Formatting Go files with gofmt..."
         gofmt -w {staged_files}
       stage_fixed: true
+
+post-commit:
+  commands:
+    install-local-ds:
+      run: ./scripts/install-local-hook.sh
+
+post-merge:
+  commands:
+    install-local-ds:
+      run: ./scripts/install-local-hook.sh
