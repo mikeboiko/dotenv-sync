@@ -27,6 +27,9 @@ func TestLoadDefaultsItemNameFromRepoRoot(t *testing.T) {
 	if cfg.SchemaFile != filepath.Join(project, ".env.example") {
 		t.Fatalf("unexpected schema file: %s", cfg.SchemaFile)
 	}
+	if cfg.StorageMode != StorageModeFields {
+		t.Fatalf("expected default storage mode %q, got %q", StorageModeFields, cfg.StorageMode)
+	}
 }
 
 func TestLoadDefaultsItemNameWithoutGit(t *testing.T) {
@@ -44,7 +47,7 @@ func TestLoadDefaultsItemNameWithoutGit(t *testing.T) {
 
 func TestLoadItemNameOverrideFromConfig(t *testing.T) {
 	project := t.TempDir()
-	if err := os.WriteFile(filepath.Join(project, ".envsync.yaml"), []byte("item_name: shared-dev\nmapping:\n  DATABASE_URL: db_url\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(project, ".envsync.yaml"), []byte("item_name: shared-dev\nstorage_mode: note_json\nmapping:\n  DATABASE_URL: db_url\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 
@@ -58,5 +61,19 @@ func TestLoadItemNameOverrideFromConfig(t *testing.T) {
 	}
 	if got := cfg.Mapping["DATABASE_URL"]; got != "db_url" {
 		t.Fatalf("expected field override db_url, got %q", got)
+	}
+	if cfg.StorageMode != StorageModeNoteJSON {
+		t.Fatalf("expected note_json storage mode, got %q", cfg.StorageMode)
+	}
+}
+
+func TestLoadRejectsInvalidStorageMode(t *testing.T) {
+	project := t.TempDir()
+	if err := os.WriteFile(filepath.Join(project, ".envsync.yaml"), []byte("storage_mode: unsupported\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := Load(project, LoadOptions{}); err == nil {
+		t.Fatal("expected invalid storage mode error")
 	}
 }

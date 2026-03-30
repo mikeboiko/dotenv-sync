@@ -53,4 +53,23 @@ func TestDiffValidateAndMissingIntegration(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("malformed note_json payload returns actionable error", func(t *testing.T) {
+		project := setupProject(t,
+			"DATABASE_URL=\n",
+			"",
+			"storage_mode: note_json\nitem_name: Jesse\n",
+		)
+		stub := writeRBWStubWithOptions(t, rbwStubOptions{
+			Status: "unlocked",
+			Items: map[string]rbwStubItem{
+				"Jesse": {Notes: strings.TrimSpace(readRepoFile(t, "test", "testdata", "provider", "note-json-malformed.txt"))},
+			},
+		})
+
+		_, stderr, code := runCLI(t, bin, project, stub.Env(), "validate")
+		if code != 1 || !strings.Contains(stderr, "ERROR E010") {
+			t.Fatalf("validate malformed payload stderr=%q code=%d", stderr, code)
+		}
+	})
 }

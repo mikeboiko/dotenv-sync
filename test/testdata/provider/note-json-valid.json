@@ -1,0 +1,8 @@
+{
+  "format": "dotenv-sync/note-json@v1",
+  "env": {
+    "DATABASE_URL": "postgres://vault/dev",
+    "JWT_SECRET": "supersecret",
+    "PORT": "8080"
+  }
+}

@@ -43,4 +43,28 @@ func TestContractDiffValidateAndMissing(t *testing.T) {
 	if !strings.Contains(stdout, "MISSING JWT_SECRET") {
 		t.Fatalf("missing output missing unresolved key: %s", stdout)
 	}
+
+	t.Run("malformed note_json payload surfaces actionable error", func(t *testing.T) {
+		project := setupProject(t,
+			"DATABASE_URL=\n",
+			"",
+			"storage_mode: note_json\nitem_name: Jesse\n",
+		)
+		stub := writeRBWStubWithOptions(t, rbwStubOptions{
+			Status: "unlocked",
+			Items: map[string]rbwStubItem{
+				"Jesse": {Notes: strings.TrimSpace(readRepoFile(t, "test", "testdata", "provider", "note-json-malformed.txt"))},
+			},
+		})
+
+		_, stderr, code := runCLI(t, bin, project, stub.Env(), "validate")
+		if code != 1 {
+			t.Fatalf("validate malformed payload exit code=%d stderr=%q", code, stderr)
+		}
+		for _, want := range []string{"ERROR E010", "Problem: provider note_json payload is malformed", "Action: repair or recreate the Bitwarden item notes and retry"} {
+			if !strings.Contains(stderr, want) {
+				t.Fatalf("validate stderr missing %q\n%s", want, stderr)
+			}
+		}
+	})
 }

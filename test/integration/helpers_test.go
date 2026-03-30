@@ -48,6 +48,24 @@ func buildCLIWithLdflags(t *testing.T, version, commit, buildTime string) string
 	return bin
 }
 
+func readRepoFile(t *testing.T, parts ...string) string {
+	t.Helper()
+	path := filepath.Join(append([]string{repoRootFromTB(t)}, parts...)...)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func renderTemplate(input string, replacements map[string]string) string {
+	output := input
+	for old, newValue := range replacements {
+		output = strings.ReplaceAll(output, old, newValue)
+	}
+	return output
+}
+
 func runCLI(t *testing.T, bin, dir string, extraEnv []string, args ...string) (string, string, int) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
@@ -146,4 +164,17 @@ func writeFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func setupProject(t *testing.T, schema, env, cfg string) string {
+	t.Helper()
+	dir := t.TempDir()
+	writeFile(t, filepath.Join(dir, ".env.example"), schema)
+	if env != "" {
+		writeFile(t, filepath.Join(dir, ".env"), env)
+	}
+	if cfg != "" {
+		writeFile(t, filepath.Join(dir, ".envsync.yaml"), cfg)
+	}
+	return dir
 }

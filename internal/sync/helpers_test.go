@@ -9,6 +9,12 @@ import (
 type fakeProvider struct {
 	status      provider.Status
 	resolutions map[string]provider.Resolution
+	payload     provider.EnvPayload
+	loadErr     error
+	storeErr    error
+	stored      provider.EnvPayload
+	loadCalls   int
+	storeCalls  int
 }
 
 func (f fakeProvider) Name() string { return "fake" }
@@ -39,4 +45,21 @@ func (f fakeProvider) ResolveMany(ctx context.Context, refs map[string]string) (
 		result[key] = res
 	}
 	return result, nil
+}
+
+func (f *fakeProvider) LoadEnvPayload(context.Context) (provider.EnvPayload, error) {
+	f.loadCalls++
+	if f.loadErr != nil {
+		return provider.EnvPayload{}, f.loadErr
+	}
+	return f.payload, nil
+}
+
+func (f *fakeProvider) StoreEnvPayload(_ context.Context, payload provider.EnvPayload) (provider.WriteResult, error) {
+	f.storeCalls++
+	if f.storeErr != nil {
+		return provider.WriteResult{}, f.storeErr
+	}
+	f.stored = payload
+	return provider.WriteResult{ItemName: payload.ItemName, Created: !payload.Exists, Updated: payload.Exists}, nil
 }

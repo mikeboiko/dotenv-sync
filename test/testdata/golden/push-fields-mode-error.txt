@@ -1,0 +1,4 @@
+ERROR E009
+Problem: ds push requires storage_mode: note_json
+Impact: push cannot safely write into field-based Bitwarden items
+Action: set storage_mode: note_json in .envsync.yaml, migrate the repo item, and retry

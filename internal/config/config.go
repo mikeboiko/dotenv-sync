@@ -9,15 +9,21 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	StorageModeFields   = "fields"
+	StorageModeNoteJSON = "note_json"
+)
+
 type Config struct {
-	Provider   string            `yaml:"provider"`
-	SchemaFile string            `yaml:"schema_file"`
-	EnvFile    string            `yaml:"env_file"`
-	ItemName   string            `yaml:"item_name"`
-	Vault      string            `yaml:"vault"`
-	Mapping    map[string]string `yaml:"mapping"`
-	ConfigFile string            `yaml:"-"`
-	BaseDir    string            `yaml:"-"`
+	Provider    string            `yaml:"provider"`
+	SchemaFile  string            `yaml:"schema_file"`
+	EnvFile     string            `yaml:"env_file"`
+	ItemName    string            `yaml:"item_name"`
+	StorageMode string            `yaml:"storage_mode"`
+	Vault       string            `yaml:"vault"`
+	Mapping     map[string]string `yaml:"mapping"`
+	ConfigFile  string            `yaml:"-"`
+	BaseDir     string            `yaml:"-"`
 }
 
 type LoadOptions struct {
@@ -28,13 +34,14 @@ type LoadOptions struct {
 
 func Default(baseDir string) Config {
 	return Config{
-		Provider:   "bitwarden",
-		SchemaFile: filepath.Join(baseDir, ".env.example"),
-		EnvFile:    filepath.Join(baseDir, ".env"),
-		ItemName:   defaultItemName(baseDir),
-		ConfigFile: filepath.Join(baseDir, ".envsync.yaml"),
-		Mapping:    map[string]string{},
-		BaseDir:    baseDir,
+		Provider:    "bitwarden",
+		SchemaFile:  filepath.Join(baseDir, ".env.example"),
+		EnvFile:     filepath.Join(baseDir, ".env"),
+		ItemName:    defaultItemName(baseDir),
+		StorageMode: StorageModeFields,
+		ConfigFile:  filepath.Join(baseDir, ".envsync.yaml"),
+		Mapping:     map[string]string{},
+		BaseDir:     baseDir,
 	}
 }
 
@@ -59,6 +66,10 @@ func Load(baseDir string, opts LoadOptions) (Config, error) {
 	if cfg.ItemName == "" {
 		cfg.ItemName = defaultItemName(baseDir)
 	}
+	cfg.StorageMode = normalizeStorageMode(cfg.StorageMode)
+	if cfg.StorageMode == "" {
+		cfg.StorageMode = StorageModeFields
+	}
 	cfg.ConfigFile = resolvePath(baseDir, cfg.ConfigFile)
 	cfg.SchemaFile = resolvePath(baseDir, cfg.SchemaFile)
 	cfg.EnvFile = resolvePath(baseDir, cfg.EnvFile)
@@ -74,10 +85,21 @@ func Load(baseDir string, opts LoadOptions) (Config, error) {
 	if cfg.Mapping == nil {
 		cfg.Mapping = map[string]string{}
 	}
+	if cfg.StorageMode != StorageModeFields && cfg.StorageMode != StorageModeNoteJSON {
+		return Config{}, fmt.Errorf("storage_mode must be %q or %q", StorageModeFields, StorageModeNoteJSON)
+	}
 	if filepath.Clean(cfg.SchemaFile) == filepath.Clean(cfg.EnvFile) {
 		return Config{}, fmt.Errorf("schema_file and env_file must differ")
 	}
 	return cfg, nil
+}
+
+func normalizeStorageMode(value string) string {
+	return strings.ToLower(strings.TrimSpace(value))
+}
+
+func (c Config) UsesNoteJSON() bool {
+	return normalizeStorageMode(c.StorageMode) == StorageModeNoteJSON
 }
 
 func resolvePath(baseDir, value string) string {

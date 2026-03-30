@@ -14,6 +14,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var providerFactory = func(cfg config.Config) provider.Provider {
+	return bitwarden.NewAdapter(cfg)
+}
+
+var pushProviderFactory = func(cfg config.Config) provider.PushProvider {
+	return bitwarden.NewAdapter(cfg)
+}
+
 type streams struct {
 	stdout io.Writer
 	stderr io.Writer
@@ -59,6 +67,7 @@ func NewRootCommand(s streams) *cobra.Command {
 	cmd.PersistentFlags().StringVar(&opts.envPath, "env", "", "env file path")
 	cmd.AddCommand(newVersionCommand(s))
 	cmd.AddCommand(newSyncCommand(s, opts))
+	cmd.AddCommand(newPushCommand(s, opts))
 	cmd.AddCommand(newDiffCommand(s, opts))
 	cmd.AddCommand(newValidateCommand(s, opts))
 	cmd.AddCommand(newDoctorCommand(s, opts))
@@ -81,5 +90,9 @@ func loadConfig(opts *rootOptions) (config.Config, error) {
 }
 
 func providerFor(cfg config.Config) provider.Provider {
-	return bitwarden.NewAdapter(cfg)
+	return providerFactory(cfg)
+}
+
+func pushProviderFor(cfg config.Config) provider.PushProvider {
+	return pushProviderFactory(cfg)
 }

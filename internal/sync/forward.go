@@ -2,6 +2,7 @@ package sync
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -52,14 +53,21 @@ func PlanForwardDocs(ctx context.Context, cfg config.Config, schema, local envfi
 			resolutions[line.Key] = provider.Resolution{Key: line.Key, Ref: line.Key, Value: line.Value, Source: "static"}
 			continue
 		}
-		fieldName := cfg.Mapping[line.Key]
-		if fieldName == "" {
-			fieldName = line.Key
+		fieldName := line.Key
+		if !cfg.UsesNoteJSON() {
+			fieldName = cfg.Mapping[line.Key]
+			if fieldName == "" {
+				fieldName = line.Key
+			}
 		}
 		refs[line.Key] = fieldName
 	}
 	providerResults, err := prov.ResolveMany(ctx, refs)
 	if err != nil {
+		var appErr *report.AppError
+		if errors.As(err, &appErr) {
+			return plan, envfile.Document{}, err
+		}
 		return plan, envfile.Document{}, report.NewAppError("E003", report.ExitOperational, "provider resolution failed", "sync cannot resolve provider-managed schema keys", "check rbw and retry", err)
 	}
 	for key, res := range providerResults {

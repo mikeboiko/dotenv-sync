@@ -9,6 +9,7 @@ The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 ## Features
 
 - `ds sync` writes `.env` from `.env.example` and `rbw`
+- `ds push` uploads the current `.env` into a repo-scoped Bitwarden item
 - `ds diff` previews drift without writing files
 - `ds validate` reports malformed files, drift, duplicates, and missing secrets
 - `ds doctor` checks config and `rbw` readiness
@@ -125,6 +126,7 @@ provider: bitwarden
 schema_file: .env.example
 env_file: .env
 item_name: my-app
+storage_mode: fields
 mapping:
   DATABASE_URL: db_url
   JWT_SECRET: auth_jwt
@@ -138,6 +140,10 @@ directory name and falls back to the current working directory name when Git
 metadata is unavailable. By default, provider-managed keys resolve as
 `rbw get <item_name> --field <ENV_VAR>`, and `mapping` overrides only the field
 name inside that Bitwarden item.
+
+`storage_mode` defaults to `fields` for backward-compatible reads from the
+repo-scoped Bitwarden item fields. Set `storage_mode: note_json` to opt a
+repository into note-backed JSON storage and enable `ds push`.
 
 ## Commands
 
@@ -153,6 +159,22 @@ ds sync --dry-run
 - Preserves comment order and line endings when rewriting `.env`
 - Produces `WRITTEN`, `UNCHANGED`, and `MISSING` output vocabulary for sync runs
 - Uses `CHECKED` summaries for dry-run previews
+
+### `ds push`
+
+```bash
+ds push --dry-run
+ds push
+```
+
+- Requires `storage_mode: note_json`
+- Reads `.env` as the upload source and `.env.example` as schema context
+- Writes a deterministic JSON payload into the repo-scoped Bitwarden item notes
+- Never prints raw values; previews use redacted markers such as `[REDACTED]`
+- Leaves `.env` and `.env.example` untouched
+
+If the repository still uses the default field-based layout, `ds push` fails
+with actionable guidance instead of creating a second provider representation.
 
 ### `ds diff`
 

@@ -2,13 +2,24 @@ package bitwarden
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"runtime"
 	"strings"
 )
 
 var ErrBinaryMissing = errors.New("rbw binary missing")
+var ErrItemNotFound = errors.New("rbw item not found")
+
+type RawItem struct {
+	Name     string
+	Notes    string
+	Password string
+}
 
 type RBWClient struct {
 	Bin string
@@ -19,10 +30,17 @@ func NewRBWClient() *RBWClient {
 }
 
 func (c *RBWClient) Run(ctx context.Context, args ...string) (string, error) {
+	return c.run(ctx, nil, args...)
+}
+
+func (c *RBWClient) run(ctx context.Context, extraEnv []string, args ...string) (string, error) {
 	if _, err := exec.LookPath(c.Bin); err != nil {
 		return "", ErrBinaryMissing
 	}
 	cmd := exec.CommandContext(ctx, c.Bin, args...)
+	if len(extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), extraEnv...)
+	}
 	out, err := cmd.CombinedOutput()
 	text := strings.TrimSpace(string(out))
 	if err != nil {
@@ -32,4 +50,88 @@ func (c *RBWClient) Run(ctx context.Context, args ...string) (string, error) {
 		return text, fmt.Errorf("%s", text)
 	}
 	return text, nil
+}
+
+func (c *RBWClient) GetRawItem(ctx context.Context, itemName string) (RawItem, error) {
+	out, err := c.Run(ctx, "get", "--raw", itemName)
+	if err != nil {
+		lower := strings.ToLower(out + " " + err.Error())
+		if strings.Contains(lower, "not found") || strings.Contains(lower, "no item") || strings.Contains(lower, "missing") {
+			return RawItem{}, ErrItemNotFound
+		}
+		return RawItem{}, err
+	}
+	var payload struct {
+		Name  string `json:"name"`
+		Notes string `json:"notes"`
+		Data  struct {
+			Password string `json:"password"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		return RawItem{}, fmt.Errorf("parse rbw raw item: %w", err)
+	}
+	return RawItem{Name: payload.Name, Notes: payload.Notes, Password: payload.Data.Password}, nil
+}
+
+func (c *RBWClient) AddItem(ctx context.Context, itemName, password, notes string) error {
+	return c.mutateItem(ctx, "add", itemName, password, notes)
+}
+
+func (c *RBWClient) EditItem(ctx context.Context, itemName, password, notes string) error {
+	return c.mutateItem(ctx, "edit", itemName, password, notes)
+}
+
+func (c *RBWClient) Sync(ctx context.Context) error {
+	_, err := c.Run(ctx, "sync")
+	return err
+}
+
+func (c *RBWClient) mutateItem(ctx context.Context, commandName, itemName, password, notes string) error {
+	workDir, err := os.MkdirTemp("", "ds-rbw-editor-*")
+	if err != nil {
+		return fmt.Errorf("create editor work dir: %w", err)
+	}
+	defer os.RemoveAll(workDir)
+	sourcePath := filepath.Join(workDir, "content.txt")
+	if err := os.WriteFile(sourcePath, []byte(renderEditorContent(password, notes)), 0o600); err != nil {
+		return fmt.Errorf("write editor content: %w", err)
+	}
+	editorPath, err := writeEditorScript(workDir)
+	if err != nil {
+		return err
+	}
+	_, err = c.run(ctx, []string{
+		"DS_RBW_EDITOR_SOURCE=" + sourcePath,
+		"EDITOR=" + editorPath,
+		"VISUAL=" + editorPath,
+	}, commandName, itemName)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func renderEditorContent(password, notes string) string {
+	if strings.TrimSpace(notes) == "" {
+		return password + "\n"
+	}
+	return password + "\n\n" + notes + "\n"
+}
+
+func writeEditorScript(dir string) (string, error) {
+	if runtime.GOOS == "windows" {
+		path := filepath.Join(dir, "editor.cmd")
+		content := "@echo off\r\ntype \"%DS_RBW_EDITOR_SOURCE%\" > \"%~1\"\r\n"
+		if err := os.WriteFile(path, []byte(content), 0o700); err != nil {
+			return "", fmt.Errorf("write editor script: %w", err)
+		}
+		return path, nil
+	}
+	path := filepath.Join(dir, "editor.sh")
+	content := "#!/bin/sh\ncat \"$DS_RBW_EDITOR_SOURCE\" > \"$1\"\n"
+	if err := os.WriteFile(path, []byte(content), 0o700); err != nil {
+		return "", fmt.Errorf("write editor script: %w", err)
+	}
+	return path, nil
 }

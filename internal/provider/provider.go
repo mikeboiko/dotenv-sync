@@ -22,9 +22,31 @@ type Resolution struct {
 	IssueCode string
 }
 
+type EnvPayload struct {
+	ItemName    string
+	StorageMode string
+	Exists      bool
+	Format      string
+	Notes       string
+	Password    string
+	Env         map[string]string
+}
+
+type WriteResult struct {
+	ItemName string
+	Created  bool
+	Updated  bool
+}
+
 type Provider interface {
 	Name() string
 	CheckReadiness(ctx context.Context) (Status, error)
 	Resolve(ctx context.Context, key, ref string) (Resolution, error)
 	ResolveMany(ctx context.Context, refs map[string]string) (map[string]Resolution, error)
+}
+
+type PushProvider interface {
+	Provider
+	LoadEnvPayload(ctx context.Context) (EnvPayload, error)
+	StoreEnvPayload(ctx context.Context, payload EnvPayload) (WriteResult, error)
 }
