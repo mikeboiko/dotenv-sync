@@ -40,10 +40,16 @@ Optionally create `.envsync.yaml`:
 provider: bitwarden
 schema_file: .env.example
 env_file: .env
+item_name: my-app
 mapping:
-  DATABASE_URL: shared/dev/database-url
-  JWT_SECRET: shared/dev/jwt-secret
+  DATABASE_URL: db_url
+  JWT_SECRET: auth_jwt
 ```
+
+If `item_name` is omitted, `ds` uses the Git repository directory name by
+default. Provider-managed keys are resolved from a single Bitwarden item, with
+each schema key using the same-named custom field unless `mapping` overrides
+the field name.
 
 ## 3. Verify prerequisites
 

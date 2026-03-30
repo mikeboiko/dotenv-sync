@@ -12,8 +12,12 @@ developer workflow. The MVP uses Cobra-based commands, a
 fidelity-preserving envfile parser and writer, a Bitwarden provider adapter
 backed by the `rbw` CLI, and shared reporting and redaction utilities so
 sync, diff, validate, doctor, init, missing, and reverse-sync behaviors stay
-consistent across Linux, macOS, and Windows. Future roadmap work may add
-compatibility with the official `bw` CLI as an alternate Bitwarden client.
+consistent across Linux, macOS, and Windows. By default, provider-backed
+lookups resolve from one Bitwarden item per repository, using the repository
+name as the item name and each environment variable as a field on that item,
+with config overrides for custom item or field names. Future roadmap work may
+add compatibility with the official `bw` CLI as an alternate Bitwarden
+client.
 
 ## Technical Context
 
@@ -34,8 +38,8 @@ validate with at most one provider lookup per distinct key per command
 **Constraints**: No runtime command wrapping, deterministic file rewrites
 with comment, order, and line-ending preservation, secret-safe output,
 minimal runtime dependencies, Bitwarden access through `rbw` in the MVP,
-default executable name `ds`, cross-platform path and process handling,
-CI-friendly exit codes  
+default executable name `ds`, repo-scoped default Bitwarden item naming,
+cross-platform path and process handling, CI-friendly exit codes  
 **Scale/Scope**: One project directory per invocation, up to 500 keys per
 schema, one provider shipping initially, local developer and CI workflows
 only for MVP

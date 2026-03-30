@@ -4,7 +4,7 @@ description: Project-specific Copilot guidance derived from active feature plans
 
 # dotenv-sync Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-03-07
+Auto-generated from all feature plans. Last updated: 2026-03-30
 
 ## Active Technologies
 
@@ -42,7 +42,7 @@ Go 1.22: Follow standard conventions
 
 ## Recent Changes
 
-- 001-dotenv-sync-cli: Planned a cross-platform Go CLI with deterministic envfile handling, `rbw`-backed Bitwarden integration, YAML config, the `ds` binary, and CLI contract coverage
+- 001-dotenv-sync-cli: Planned a cross-platform Go CLI with deterministic envfile handling, repo-scoped `rbw` item defaults, YAML config, the `ds` binary, and CLI contract coverage
 
 <!-- MANUAL ADDITIONS START -->
 <!-- MANUAL ADDITIONS END -->
