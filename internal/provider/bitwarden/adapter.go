@@ -27,22 +27,28 @@ func (a *Adapter) CheckReadiness(ctx context.Context) (provider.Status, error) {
 }
 
 func (a *Adapter) Resolve(ctx context.Context, key, ref string) (provider.Resolution, error) {
-	if ref == "" {
-		ref = key
+	fieldName := ref
+	if fieldName == "" {
+		fieldName = key
 	}
+	itemName := strings.TrimSpace(a.cfg.ItemName)
+	if itemName == "" {
+		itemName = key
+	}
+	cacheKey := itemName + "|" + fieldName
 	a.mu.Lock()
-	if cached, ok := a.cache[ref]; ok {
+	if cached, ok := a.cache[cacheKey]; ok {
 		a.mu.Unlock()
 		cached.Key = key
-		cached.Ref = ref
+		cached.Ref = cacheKey
 		return cached, nil
 	}
 	a.mu.Unlock()
-	out, err := a.client.Run(ctx, "get", ref)
-	resolution := provider.Resolution{Key: key, Ref: ref}
+	out, err := a.client.Run(ctx, "get", "--field", fieldName, itemName)
+	resolution := provider.Resolution{Key: key, Ref: cacheKey}
 	if err != nil {
 		lower := strings.ToLower(err.Error() + " " + out)
-		if strings.Contains(lower, "not found") || strings.Contains(lower, "missing") || strings.Contains(lower, "no item") {
+		if strings.Contains(lower, "not found") || strings.Contains(lower, "missing") || strings.Contains(lower, "no item") || strings.Contains(lower, "no such field") || strings.Contains(lower, "field not found") {
 			resolution.Source = "missing"
 			resolution.IssueCode = "E005"
 		} else {
@@ -54,7 +60,7 @@ func (a *Adapter) Resolve(ctx context.Context, key, ref string) (provider.Resolu
 		resolution.Value = out
 	}
 	a.mu.Lock()
-	a.cache[ref] = resolution
+	a.cache[cacheKey] = resolution
 	a.mu.Unlock()
 	return resolution, nil
 }

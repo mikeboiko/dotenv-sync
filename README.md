@@ -83,13 +83,20 @@ install -Dm755 ./bin/ds ~/.local/bin/ds
 provider: bitwarden
 schema_file: .env.example
 env_file: .env
+item_name: my-app
 mapping:
-  DATABASE_URL: database-url
-  JWT_SECRET: jwt-secret
+  DATABASE_URL: db_url
+  JWT_SECRET: auth_jwt
 ```
 
 Blank values in `.env.example` are treated as provider-managed secrets. Literal
 values are treated as safe defaults and copied into `.env`.
+
+If `item_name` is omitted, `ds` derives it from the Git repository root
+directory name and falls back to the current working directory name when Git
+metadata is unavailable. By default, provider-managed keys resolve as
+`rbw get <item_name> --field <ENV_VAR>`, and `mapping` overrides only the field
+name inside that Bitwarden item.
 
 ## Commands
 
@@ -101,7 +108,7 @@ ds sync --dry-run
 ```
 
 - Reads `.env.example` as the schema contract
-- Resolves blank entries through `rbw`
+- Resolves blank entries through `rbw` using a repo-scoped item by default
 - Preserves comment order and line endings when rewriting `.env`
 - Produces `WRITTEN`, `UNCHANGED`, and `MISSING` output vocabulary for sync runs
 - Uses `CHECKED` summaries for dry-run previews

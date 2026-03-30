@@ -8,6 +8,10 @@ import (
 	"testing"
 )
 
+func rbwLookupKey(item, field string) string {
+	return item + "::" + field
+}
+
 func writeRBWStub(t *testing.T, status string, get map[string]string, missing ...string) []string {
 	t.Helper()
 	stubDir := t.TempDir()
@@ -29,7 +33,18 @@ func writeRBWStub(t *testing.T, status string, get map[string]string, missing ..
 		script.WriteString(fmt.Sprintf("list) printf '%%s\\n' '%s' ;;\n", status))
 	}
 	script.WriteString(fmt.Sprintf("status) printf '%%s\\n' '%s' ;;\n", status))
-	script.WriteString("get)\ncase \"$2\" in\n")
+	script.WriteString("get)\n")
+	script.WriteString("field=''\n")
+	script.WriteString("item=''\n")
+	script.WriteString("shift\n")
+	script.WriteString("while [ \"$#\" -gt 0 ]; do\n")
+	script.WriteString("  case \"$1\" in\n")
+	script.WriteString("    --field) field=\"$2\"; shift 2 ;;\n")
+	script.WriteString("    --*) shift ;;\n")
+	script.WriteString("    *) item=\"$1\"; shift ;;\n")
+	script.WriteString("  esac\n")
+	script.WriteString("done\n")
+	script.WriteString("case \"$item::$field\" in\n")
 	for key, value := range get {
 		script.WriteString(fmt.Sprintf("%s) printf '%%s\\n' '%s' ;;\n", key, value))
 	}
