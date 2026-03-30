@@ -1,0 +1,5 @@
+ds_v1.2.3_linux_amd64.tar.gz
+ds_v1.2.3_linux_arm64.tar.gz
+ds_v1.2.3_darwin_amd64.tar.gz
+ds_v1.2.3_darwin_arm64.tar.gz
+ds_v1.2.3_windows_amd64.zip

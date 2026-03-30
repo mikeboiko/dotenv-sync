@@ -1,0 +1,4 @@
+Version: {{VERSION}}
+Commit: {{COMMIT}}
+Built: {{BUILD_TIME}}
+Platform: {{PLATFORM}}

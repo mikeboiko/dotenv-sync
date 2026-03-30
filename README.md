@@ -15,12 +15,17 @@ The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 - `ds init` bootstraps `.env.example` from `.env`
 - `ds missing` lists unresolved provider-backed keys
 - `ds reverse` adds missing schema placeholders back into `.env.example`
+- `ds --version` and `ds version` report build and release metadata
 
 ## Install and build
 
 ```bash
 go build -o ./bin/ds ./cmd/ds
 ```
+
+Local development builds report `dev` metadata by default. Release builds inject
+their version, commit, and build time at build time instead of editing source
+files.
 
 ## Add `ds` to your `PATH`
 
@@ -168,6 +173,18 @@ ds reverse
 
 Adds keys found in `.env` but missing from `.env.example` as blank placeholders.
 
+### `ds --version` and `ds version`
+
+```bash
+ds --version
+ds version
+```
+
+- `ds --version` prints a concise version string such as `ds v0.4.0`
+- `ds version` prints detailed metadata including version, commit, build time,
+  and platform
+- Local development builds fall back to `dev`, `none`, and `unknown`
+
 ## Exit codes
 
 - `0`: success or no-op success
@@ -182,7 +199,35 @@ go test ./... -run TestContract
 go test ./... -bench . -run '^$'
 ```
 
+## Build a local versioned binary
+
+```bash
+VERSION=v0.1.0
+COMMIT=$(git rev-parse --short HEAD)
+BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+
+go build -o ./bin/ds \
+  -ldflags "-X dotenv-sync/pkg/dotenvsync.Version=$VERSION -X dotenv-sync/pkg/dotenvsync.Commit=$COMMIT -X dotenv-sync/pkg/dotenvsync.BuildTime=$BUILD_TIME" \
+  ./cmd/ds
+
+./bin/ds --version
+./bin/ds version
+```
+
+To preview the next release version from the current repository tags:
+
+```bash
+go run ./scripts/nextversion --bump patch
+```
+
 ## CI
 
 GitHub Actions runs `go test ./...` on every push via
 `.github/workflows/go-tests.yml`.
+
+GitHub Actions also supports a manual release workflow in
+`.github/workflows/release.yml`. It must be triggered from the repository's
+default branch head (typically `main`), computes the next semantic version from
+existing `vX.Y.Z` tags, runs `go test ./...`, builds versioned archives, checks
+the Linux release artifact with `ds --version`, and then publishes the GitHub
+release.

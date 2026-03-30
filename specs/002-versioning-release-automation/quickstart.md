@@ -48,6 +48,9 @@ If no prior semver tag exists, the patch baseline is `v0.0.1`.
 From the GitHub UI, run the manual release workflow and choose `major`,
 `minor`, or `patch`.
 
+The workflow only publishes when it runs from the latest commit on the default
+branch (typically `main`).
+
 Or use the GitHub CLI:
 
 ```bash

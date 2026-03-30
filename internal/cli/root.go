@@ -10,6 +10,7 @@ import (
 	"dotenv-sync/internal/provider"
 	"dotenv-sync/internal/provider/bitwarden"
 	"dotenv-sync/internal/report"
+	"dotenv-sync/pkg/dotenvsync"
 	"github.com/spf13/cobra"
 )
 
@@ -34,6 +35,8 @@ func Execute(args []string, stdout, stderr io.Writer) int {
 		var appErr *report.AppError
 		if errors.As(err, &appErr) {
 			_, _ = fmt.Fprintln(stderr, report.ErrorBlock(appErr))
+		} else {
+			_, _ = fmt.Fprintln(stderr, err)
 		}
 		return report.ExitCode(err)
 	}
@@ -46,9 +49,15 @@ func NewRootCommand(s streams) *cobra.Command {
 		Use:   "ds",
 		Short: "Sync .env files from .env.example and rbw",
 	}
+	cmd.SetOut(s.stdout)
+	cmd.SetErr(s.stderr)
+	cmd.Version = dotenvsync.Current().Version
+	cmd.SetVersionTemplate("{{printf \"%s %s\\n\" .Name .Version}}")
+	cmd.InitDefaultVersionFlag()
 	cmd.PersistentFlags().StringVar(&opts.configPath, "config", "", "config file path")
 	cmd.PersistentFlags().StringVar(&opts.schemaPath, "schema", "", "schema file path")
 	cmd.PersistentFlags().StringVar(&opts.envPath, "env", "", "env file path")
+	cmd.AddCommand(newVersionCommand(s))
 	cmd.AddCommand(newSyncCommand(s, opts))
 	cmd.AddCommand(newDiffCommand(s, opts))
 	cmd.AddCommand(newValidateCommand(s, opts))
