@@ -38,9 +38,9 @@ implementation, testing, and constitution compliance validation for each story.
 **Purpose**: Establish shared fixtures, helper extensions, and golden outputs for
 version and release automation work.
 
-- [ ] T001 Create versioning fixture and golden-output files in `test/testdata/golden/version-short.txt`, `test/testdata/golden/version-detailed.txt`, and `test/testdata/release/README.md`
-- [ ] T002 [P] Extend shared metadata-aware command helpers in `test/contract/helpers_test.go` and `test/integration/helpers_test.go`
-- [ ] T003 [P] Seed semver and artifact fixture cases in `test/testdata/release/mixed-tags.txt`, `test/testdata/release/no-tags.txt`, and `test/testdata/release/expected-assets.txt`
+- [x] T001 Create versioning fixture and golden-output files in `test/testdata/golden/version-short.txt`, `test/testdata/golden/version-detailed.txt`, and `test/testdata/release/README.md`
+- [x] T002 [P] Extend shared metadata-aware command helpers in `test/contract/helpers_test.go` and `test/integration/helpers_test.go`
+- [x] T003 [P] Seed semver and artifact fixture cases in `test/testdata/release/mixed-tags.txt`, `test/testdata/release/no-tags.txt`, and `test/testdata/release/expected-assets.txt`
 
 ---
 
@@ -51,10 +51,10 @@ stories.
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete.
 
-- [ ] T004 [P] Add failing unit coverage for metadata defaults and render helpers in `pkg/dotenvsync/version_test.go`
-- [ ] T005 [P] Add failing unit coverage for semver filtering, bumping, and artifact naming in `internal/release/semver_test.go`
-- [ ] T006 Implement mutable build metadata variables and render helpers in `pkg/dotenvsync/version.go`
-- [ ] T007 Implement semver filtering, next-version calculation, and artifact-name helpers in `internal/release/semver.go`
+- [x] T004 [P] Add failing unit coverage for metadata defaults and render helpers in `pkg/dotenvsync/version_test.go`
+- [x] T005 [P] Add failing unit coverage for semver filtering, bumping, and artifact naming in `internal/release/semver_test.go`
+- [x] T006 Implement mutable build metadata variables and render helpers in `pkg/dotenvsync/version.go`
+- [x] T007 Implement semver filtering, next-version calculation, and artifact-name helpers in `internal/release/semver.go`
 
 **Checkpoint**: Shared build metadata and release calculation primitives are
 ready for story work.
@@ -74,17 +74,17 @@ expected metadata without touching `.env` files or provider state.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T008 [P] [US1] Add CLI contract coverage for `ds --version` and `ds version` in `test/contract/version_contract_test.go`
-- [ ] T009 [P] [US1] Add integration coverage for development and ldflags-injected builds in `test/integration/version_command_test.go`
-- [ ] T010 [P] [US1] Add root and version command unit coverage in `internal/cli/root_test.go` and `internal/cli/version_test.go`
+- [x] T008 [P] [US1] Add CLI contract coverage for `ds --version` and `ds version` in `test/contract/version_contract_test.go`
+- [x] T009 [P] [US1] Add integration coverage for development and ldflags-injected builds in `test/integration/version_command_test.go`
+- [x] T010 [P] [US1] Add root and version command unit coverage in `internal/cli/root_test.go` and `internal/cli/version_test.go`
 
 ### Implementation for User Story 1
 
-- [ ] T011 [US1] Implement concise and detailed version renderers in `internal/cli/version.go`
-- [ ] T012 [US1] Wire `--version` handling and register the `version` subcommand in `internal/cli/root.go`
-- [ ] T013 [US1] Align `ds version` output with shared metadata helpers in `internal/cli/version.go` and `pkg/dotenvsync/version.go`
-- [ ] T014 [US1] Enforce no-extra-args and success exit behavior for version paths in `internal/cli/version.go` and `internal/cli/root.go`
-- [ ] T015 [US1] Verify fast-path version performance in `internal/cli/version_benchmark_test.go` and `test/contract/version_contract_test.go`
+- [x] T011 [US1] Implement concise and detailed version renderers in `internal/cli/version.go`
+- [x] T012 [US1] Wire `--version` handling and register the `version` subcommand in `internal/cli/root.go`
+- [x] T013 [US1] Align `ds version` output with shared metadata helpers in `internal/cli/version.go` and `pkg/dotenvsync/version.go`
+- [x] T014 [US1] Enforce no-extra-args and success exit behavior for version paths in `internal/cli/version.go` and `internal/cli/root.go`
+- [x] T015 [US1] Verify fast-path version performance in `internal/cli/version_benchmark_test.go` and `test/contract/version_contract_test.go`
 
 **Checkpoint**: User Story 1 is independently functional and ready to demo as
 the MVP slice.
@@ -105,16 +105,16 @@ tests and builds succeed.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T016 [P] [US2] Add contract coverage for workflow dispatch inputs, publish ordering, and artifact naming in `test/contract/release_workflow_contract_test.go`
-- [ ] T017 [P] [US2] Add integration coverage for semver bump selection, no-tag baselines, and duplicate-tag rejection in `test/integration/release_workflow_test.go`
-- [ ] T018 [P] [US2] Add unit coverage for latest-tag lookup and default-branch enforcement in `internal/release/semver_test.go`
+- [x] T016 [P] [US2] Add contract coverage for workflow dispatch inputs, publish ordering, and artifact naming in `test/contract/release_workflow_contract_test.go`
+- [x] T017 [P] [US2] Add integration coverage for semver bump selection, no-tag baselines, and duplicate-tag rejection in `test/integration/release_workflow_test.go`
+- [x] T018 [P] [US2] Add unit coverage for latest-tag lookup and default-branch enforcement in `internal/release/semver_test.go`
 
 ### Implementation for User Story 2
 
-- [ ] T019 [US2] Extend `internal/release/semver.go` with latest-tag lookup, duplicate-tag rejection, and default-branch validation
-- [ ] T020 [US2] Implement the release preview CLI in `scripts/nextversion/main.go`
-- [ ] T021 [US2] Create the manual semver release workflow in `.github/workflows/release.yml`
-- [ ] T022 [US2] Validate publish-after-build ordering and actionable workflow failure messages in `.github/workflows/release.yml` and `test/contract/release_workflow_contract_test.go`
+- [x] T019 [US2] Extend `internal/release/semver.go` with latest-tag lookup, duplicate-tag rejection, and default-branch validation
+- [x] T020 [US2] Implement the release preview CLI in `scripts/nextversion/main.go`
+- [x] T021 [US2] Create the manual semver release workflow in `.github/workflows/release.yml`
+- [x] T022 [US2] Validate publish-after-build ordering and actionable workflow failure messages in `.github/workflows/release.yml` and `test/contract/release_workflow_contract_test.go`
 
 **Checkpoint**: User Story 2 can publish tagged releases with repeatable semver
 calculation and guarded workflow behavior.
@@ -134,15 +134,15 @@ verification steps.
 
 > **NOTE: Write these tests FIRST, ensure they FAIL before implementation**
 
-- [ ] T023 [P] [US3] Add contract coverage for documented local ldflags builds and artifact self-reporting in `test/contract/version_build_contract_test.go`
-- [ ] T024 [P] [US3] Add integration coverage for local ldflags builds and release-artifact version consistency in `test/integration/version_build_test.go`
-- [ ] T025 [P] [US3] Add unit coverage for platform reporting and fallback metadata in `pkg/dotenvsync/version_test.go`
+- [x] T023 [P] [US3] Add contract coverage for documented local ldflags builds and artifact self-reporting in `test/contract/version_build_contract_test.go`
+- [x] T024 [P] [US3] Add integration coverage for local ldflags builds and release-artifact version consistency in `test/integration/version_build_test.go`
+- [x] T025 [P] [US3] Add unit coverage for platform reporting and fallback metadata in `pkg/dotenvsync/version_test.go`
 
 ### Implementation for User Story 3
 
-- [ ] T026 [US3] Add release-artifact self-verification steps to `.github/workflows/release.yml` using `ds --version`
-- [ ] T027 [US3] Document local ldflags builds, version inspection, and maintainer release steps in `README.md` and `specs/002-versioning-release-automation/quickstart.md`
-- [ ] T028 [US3] Align local release-preview examples with `scripts/nextversion/main.go` and `specs/002-versioning-release-automation/quickstart.md`
+- [x] T026 [US3] Add release-artifact self-verification steps to `.github/workflows/release.yml` using `ds --version`
+- [x] T027 [US3] Document local ldflags builds, version inspection, and maintainer release steps in `README.md` and `specs/002-versioning-release-automation/quickstart.md`
+- [x] T028 [US3] Align local release-preview examples with `scripts/nextversion/main.go` and `specs/002-versioning-release-automation/quickstart.md`
 
 **Checkpoint**: User Story 3 makes local, CI, and release artifact verification
 consistent and independently usable.
@@ -154,11 +154,11 @@ consistent and independently usable.
 **Purpose**: Finish documentation, regression coverage, UX consistency, and
 budget validation across all stories.
 
-- [ ] T029 [P] Update help text and installation documentation for version inspection in `README.md` and `internal/cli/version.go`
-- [ ] T030 [P] Audit consistent version vocabulary and token-safe release logs in `internal/cli/version.go`, `.github/workflows/release.yml`, and `specs/002-versioning-release-automation/contracts/cli-version.contract.md`
-- [ ] T031 Add regression coverage for non-semver tags and partial-release prevention in `test/contract/release_workflow_contract_test.go`, `test/integration/release_workflow_test.go`, and `internal/release/semver_test.go`
-- [ ] T032 Verify performance and dependency budgets in `internal/cli/version_benchmark_test.go` and `.github/workflows/release.yml`
-- [ ] T033 Run quickstart validation and refresh golden outputs in `specs/002-versioning-release-automation/quickstart.md`, `test/testdata/golden/version-short.txt`, and `test/testdata/golden/version-detailed.txt`
+- [x] T029 [P] Update help text and installation documentation for version inspection in `README.md` and `internal/cli/version.go`
+- [x] T030 [P] Audit consistent version vocabulary and token-safe release logs in `internal/cli/version.go`, `.github/workflows/release.yml`, and `specs/002-versioning-release-automation/contracts/cli-version.contract.md`
+- [x] T031 Add regression coverage for non-semver tags and partial-release prevention in `test/contract/release_workflow_contract_test.go`, `test/integration/release_workflow_test.go`, and `internal/release/semver_test.go`
+- [x] T032 Verify performance and dependency budgets in `internal/cli/version_benchmark_test.go` and `.github/workflows/release.yml`
+- [x] T033 Run quickstart validation and refresh golden outputs in `specs/002-versioning-release-automation/quickstart.md`, `test/testdata/golden/version-short.txt`, and `test/testdata/golden/version-detailed.txt`
 
 ---
 
