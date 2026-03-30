@@ -27,6 +27,23 @@ func TestCurrentUsesFallbackMetadata(t *testing.T) {
 	}
 }
 
+func TestRenderersUseFallbackMetadata(t *testing.T) {
+	restore := snapshotMetadata()
+	defer restore()
+	Version = ""
+	Commit = ""
+	BuildTime = ""
+
+	if got := Short("ds"); got != "ds dev" {
+		t.Fatalf("short fallback = %q", got)
+	}
+
+	want := "Version: dev\nCommit: none\nBuilt: unknown\nPlatform: " + runtime.GOOS + "/" + runtime.GOARCH
+	if got := Detailed(); got != want {
+		t.Fatalf("detailed fallback = %q", got)
+	}
+}
+
 func TestRenderersUseInjectedMetadata(t *testing.T) {
 	restore := snapshotMetadata()
 	defer restore()

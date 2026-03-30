@@ -73,6 +73,26 @@ func readRepoFile(t *testing.T, parts ...string) string {
 	return string(data)
 }
 
+func readGoldenFile(t *testing.T, name string) string {
+	t.Helper()
+	return readRepoFile(t, "test", "testdata", "golden", name)
+}
+
+func readReleaseFixtureLines(t *testing.T, name string) []string {
+	t.Helper()
+	content := readRepoFile(t, "test", "testdata", "release", name)
+	lines := strings.Split(content, "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	return filtered
+}
+
 func renderTemplate(input string, replacements map[string]string) string {
 	output := input
 	for old, newValue := range replacements {

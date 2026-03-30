@@ -1,29 +1,24 @@
-# Quickstart: Version reporting and release automation
+# Quickstart: Automatic patch release automation
 
-## Check the current local build
+## Preview the next automatic patch release locally
 
-Build the CLI normally:
+Run the local preview helper from the repository root:
 
 ```bash
-go build -o ./bin/ds ./cmd/ds
-./bin/ds --version
-./bin/ds version
+go run ./scripts/nextversion
 ```
 
-Expected development output:
+Expected examples:
 
 ```text
-ds dev
-Version: dev
-Commit: none
-Built: unknown
-Platform: linux/amd64
+v0.0.1   # when no prior semver tags exist
+v0.4.3   # when the latest reachable semver tag is v0.4.2
 ```
 
-## Build a local binary with explicit version metadata
+## Build a local binary with the predicted release metadata
 
 ```bash
-VERSION=v0.1.0
+VERSION=$(go run ./scripts/nextversion)
 COMMIT=$(git rev-parse --short HEAD)
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -35,42 +30,30 @@ go build -o ./bin/ds \
 ./bin/ds version
 ```
 
-## Install the current checkout into `~/.local/bin/ds`
+This mirrors the metadata contract the release workflow verifies before
+publication.
+
+## Push to `main` to trigger an automatic patch release
 
 ```bash
 git switch main
 git pull --ff-only
-./scripts/install-local.sh
-ds version
+git push origin main
 ```
 
-If `main` is exactly on the latest release tag, the reported version matches the
-latest GitHub release. If `main` is ahead of the latest release, the script uses
-Git-derived metadata such as `v0.4.0-3-gabc1234` so the local build remains
-distinguishable from the last published release.
-
-## Preview the next release version locally
+Monitor the workflow from the GitHub UI, or with the GitHub CLI:
 
 ```bash
-go run ./scripts/nextversion --bump patch
+gh run list --workflow release.yml --limit 1
+gh run watch <run-id>
 ```
 
-If no prior semver tag exists, the patch baseline is `v0.0.1`.
+Under normal GitHub-hosted runner availability, the release run should finish
+within 15 minutes.
 
-## Trigger a GitHub release
-
-From the GitHub UI, run the manual release workflow and choose `major`,
-`minor`, or `patch`.
-
-The workflow only publishes when it runs from the latest commit on the default
-branch (typically `main`).
-
-Or use the GitHub CLI:
-
-```bash
-gh workflow run release.yml -f bump=patch -f release_notes="Patch release"
-gh run watch
-```
+The workflow should calculate the next patch version, run `go test ./...`, build
+the release artifacts, verify the Linux reference artifact with `ds --version`,
+and rely on automated tests for cross-platform version parity before publishing.
 
 ## Verify a published release
 
@@ -80,3 +63,11 @@ After the workflow completes:
 2. Download one of the published `ds_<version>_<os>_<arch>` artifacts.
 3. Run `ds --version` or `ds version` and confirm the reported version matches
    the tag name exactly.
+
+## Confirm rerun safety
+
+If the release workflow is rerun for a commit that already has a reachable
+semver tag, it should report that the commit is already released by tag and
+avoid creating another tag or GitHub release. If the tag exists but the GitHub
+release record is missing, repair that drift manually instead of expecting the
+workflow to republish it automatically.

@@ -1,43 +1,28 @@
-name: Manual Release
+name: Automatic Patch Release
 
 on:
-  workflow_dispatch:
-    inputs:
-      bump:
-        description: Which semantic version part to bump
-        required: true
-        type: choice
-        options:
-          - major
-          - minor
-          - patch
-      release_notes:
-        description: Optional release notes for the GitHub release
-        required: false
-        type: string
+  push:
+    branches:
+      - main
 
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref_name }}
+  cancel-in-progress: false
+
 jobs:
   release:
-    name: Build and publish release
+    name: Build and publish patch release
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-
-      - name: Ensure workflow is running from the default branch
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          test "${GITHUB_REF_NAME}" = "${DEFAULT_BRANCH}" || {
-            echo "Release workflow must run from ${DEFAULT_BRANCH}, got ${GITHUB_REF_NAME}" >&2
-            exit 1
-          }
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -46,54 +31,85 @@ jobs:
           cache: true
 
       - name: Fetch tags
-        env:
-          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
-        run: |
-          git fetch --force --tags origin
-          git fetch --force origin "${DEFAULT_BRANCH}"
-          test "$(git rev-parse HEAD)" = "$(git rev-parse "origin/${DEFAULT_BRANCH}")" || {
-            echo "Release workflow must run from the latest ${DEFAULT_BRANCH} commit" >&2
-            exit 1
-          }
+        run: git fetch --force --tags origin
 
-      - name: Compute release version
+      - name: Compute release status
         id: version
-        run: |
-          VERSION="$(go run ./scripts/nextversion --bump "${{ inputs.bump }}")"
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-
-      - name: Ensure the release tag does not already exist
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          if git rev-parse -q --verify "refs/tags/${VERSION}" >/dev/null; then
-            echo "Release tag ${VERSION} already exists" >&2
-            exit 1
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "${workdir}"' EXIT
+
+          set +e
+          preview="$(go run ./scripts/nextversion 2>"${workdir}/nextversion.stderr")"
+          status=$?
+          set -e
+
+          if [ "${status}" -eq 0 ]; then
+            printf 'release_required=true\n' >> "${GITHUB_OUTPUT}"
+            printf 'version=%s\n' "${preview}" >> "${GITHUB_OUTPUT}"
+            echo "Preparing automatic patch release ${preview}"
+            exit 0
           fi
 
+          if [ "${status}" -eq 2 ]; then
+            tag="${preview}"
+            printf 'release_required=false\n' >> "${GITHUB_OUTPUT}"
+            printf 'released_tag=%s\n' "${tag}" >> "${GITHUB_OUTPUT}"
+
+            if gh release view "${tag}" >/dev/null 2>&1; then
+              reason="commit already released by tag ${tag}"
+            else
+              reason="commit already released by tag ${tag}; repair the GitHub release record manually"
+            fi
+
+            printf 'skip_reason=%s\n' "${reason}" >> "${GITHUB_OUTPUT}"
+            echo "Skipping automatic release: ${reason}"
+            cat "${workdir}/nextversion.stderr"
+            exit 0
+          fi
+
+          cat "${workdir}/nextversion.stderr" >&2
+          exit "${status}"
+
+      - name: Report skip reason
+        if: steps.version.outputs.release_required != 'true'
+        run: echo "${{ steps.version.outputs.skip_reason }}"
+
       - name: Run test suite
+        if: steps.version.outputs.release_required == 'true'
         run: go test ./...
 
       - name: Build release artifacts
+        if: steps.version.outputs.release_required == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
           COMMIT: ${{ github.sha }}
         run: |
           set -euo pipefail
           BUILD_TIME="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          mkdir -p dist
+          rm -rf dist .release
+          mkdir -p dist .release
           targets="linux/amd64 linux/arm64 darwin/amd64 darwin/arm64 windows/amd64"
+
           for target in ${targets}; do
             GOOS="${target%/*}"
             GOARCH="${target#*/}"
             workdir=".release/build_${GOOS}_${GOARCH}"
+            rm -rf "${workdir}"
             mkdir -p "${workdir}"
             ext=""
             if [ "${GOOS}" = "windows" ]; then
               ext=".exe"
             fi
+
             binary="${workdir}/ds${ext}"
-            GOOS="${GOOS}" GOARCH="${GOARCH}" go build -trimpath -ldflags "-X dotenv-sync/pkg/dotenvsync.Version=${VERSION} -X dotenv-sync/pkg/dotenvsync.Commit=${COMMIT} -X dotenv-sync/pkg/dotenvsync.BuildTime=${BUILD_TIME}" -o "${binary}" ./cmd/ds
+            GOOS="${GOOS}" GOARCH="${GOARCH}" go build -trimpath \
+              -ldflags "-X dotenv-sync/pkg/dotenvsync.Version=${VERSION} -X dotenv-sync/pkg/dotenvsync.Commit=${COMMIT} -X dotenv-sync/pkg/dotenvsync.BuildTime=${BUILD_TIME}" \
+              -o "${binary}" ./cmd/ds
+
             if [ "${GOOS}" = "windows" ]; then
               asset="dist/ds_${VERSION}_windows_${GOARCH}.zip"
               (cd "${workdir}" && zip -q -j "../../$(basename "${asset}")" "ds${ext}")
@@ -103,22 +119,21 @@ jobs:
             fi
           done
 
-      - name: Verify the Linux release artifact reports its version
+      - name: Verify the Linux reference artifact reports its version
+        if: steps.version.outputs.release_required == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
+          set -euo pipefail
           mkdir -p dist/verify
           tar -C dist/verify -xzf "dist/ds_${VERSION}_linux_amd64.tar.gz"
           test "$(dist/verify/ds --version)" = "ds ${VERSION}"
 
       - name: Publish GitHub release
+        if: steps.version.outputs.release_required == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
-          RELEASE_NOTES: ${{ inputs.release_notes }}
         run: |
-          if [ -n "${RELEASE_NOTES}" ]; then
-            gh release create "${VERSION}" dist/ds_* --title "Release ${VERSION}" --notes "${RELEASE_NOTES}" --target "${GITHUB_SHA}"
-          else
-            gh release create "${VERSION}" dist/ds_* --title "Release ${VERSION}" --generate-notes --target "${GITHUB_SHA}"
-          fi
+          set -euo pipefail
+          gh release create "${VERSION}" dist/ds_* --title "${VERSION}" --generate-notes --target "${GITHUB_SHA}"

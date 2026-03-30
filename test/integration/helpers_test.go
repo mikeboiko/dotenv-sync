@@ -97,8 +97,15 @@ func runCLI(t *testing.T, bin, dir string, extraEnv []string, args ...string) (s
 
 func runGoMain(t *testing.T, dir, pkg string, args ...string) (string, string, int) {
 	t.Helper()
-	cmdArgs := append([]string{"run", pkg}, args...)
-	cmd := exec.Command("go", cmdArgs...)
+	bin := filepath.Join(t.TempDir(), "go-main")
+	build := exec.Command("go", "build", "-o", bin, pkg)
+	build.Dir = dir
+	build.Env = append(os.Environ(), "GOFLAGS=")
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build go main: %v\n%s", err, out)
+	}
+
+	cmd := exec.Command(bin, args...)
 	cmd.Dir = dir
 	cmd.Env = append(os.Environ(), "GOFLAGS=")
 	var stdout, stderr bytes.Buffer
@@ -131,6 +138,35 @@ func runCommand(t *testing.T, dir, name string, args ...string) (string, string,
 	}
 	t.Fatalf("run command: %v", err)
 	return "", "", 0
+}
+
+func readGoldenFile(t *testing.T, name string) string {
+	t.Helper()
+	path := filepath.Join(repoRootFromTB(t), "test", "testdata", "golden", name)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func readReleaseFixtureLines(t *testing.T, name string) []string {
+	t.Helper()
+	path := filepath.Join(repoRootFromTB(t), "test", "testdata", "release", name)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	lines := strings.Split(string(data), "\n")
+	filtered := make([]string, 0, len(lines))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		filtered = append(filtered, line)
+	}
+	return filtered
 }
 
 func initGitRepo(t *testing.T, dir string) {

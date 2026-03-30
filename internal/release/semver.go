@@ -11,6 +11,8 @@ import (
 
 var semverTagPattern = regexp.MustCompile(`^v(\d+)\.(\d+)\.(\d+)$`)
 
+const BaselineVersion = "v0.0.0"
+
 type SemVer struct {
 	Major int
 	Minor int
@@ -57,6 +59,10 @@ func NextVersion(currentTag, bump string) (string, error) {
 	return version.String(), nil
 }
 
+func NextPatchVersion(currentTag string) (string, error) {
+	return NextVersion(currentTag, "patch")
+}
+
 func AssetName(version, goos, goarch string) string {
 	if goos == "windows" {
 		return fmt.Sprintf("ds_%s_windows_%s.zip", version, goarch)
@@ -76,8 +82,43 @@ func LatestVersionFromRepo(ctx context.Context, dir string) (string, bool, error
 	return version, ok, nil
 }
 
+func ReleaseTagForRef(ctx context.Context, dir, ref string) (string, bool, error) {
+	cmd := exec.CommandContext(ctx, "git", "tag", "--points-at", ref, "--list")
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return "", false, fmt.Errorf("list git tags pointing at %s: %w (%s)", ref, err, strings.TrimSpace(string(out)))
+	}
+	lines := strings.Fields(string(out))
+	version, ok := LatestVersionFromTags(lines)
+	return version, ok, nil
+}
+
+func VersionTagExists(ctx context.Context, dir, tag string) (bool, error) {
+	cmd := exec.CommandContext(ctx, "git", "rev-parse", "-q", "--verify", "refs/tags/"+tag)
+	cmd.Dir = dir
+	out, err := cmd.CombinedOutput()
+	if err == nil {
+		return true, nil
+	}
+	if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("check git tag %s: %w (%s)", tag, err, strings.TrimSpace(string(out)))
+}
+
+func NextPatchVersionForRepo(ctx context.Context, dir string) (string, error) {
+	current := BaselineVersion
+	if latest, ok, err := LatestVersionFromRepo(ctx, dir); err != nil {
+		return "", err
+	} else if ok {
+		current = latest
+	}
+	return NextPatchVersion(current)
+}
+
 func NextVersionForRepo(ctx context.Context, dir, bump string) (string, error) {
-	current := "v0.0.0"
+	current := BaselineVersion
 	if latest, ok, err := LatestVersionFromRepo(ctx, dir); err != nil {
 		return "", err
 	} else if ok {
