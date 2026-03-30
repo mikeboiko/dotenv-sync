@@ -7,14 +7,14 @@ import (
 
 func TestContractDiffValidateAndMissing(t *testing.T) {
 	bin := buildCLI(t)
-	_, env := writeRBWStub(t, "unlocked", map[string]string{
-		"database-url": "postgres://vault/dev",
-	}, "jwt-secret")
 	project := setupProject(t,
 		"DATABASE_URL=\nJWT_SECRET=\nPORT=8080\n",
 		"DATABASE_URL=postgres://vault/dev\nPORT=9090\nEXTRA_KEY=value\n",
-		"mapping:\n  DATABASE_URL: database-url\n  JWT_SECRET: jwt-secret\n",
+		"item_name: shared-dev\nmapping:\n  DATABASE_URL: database-url\n  JWT_SECRET: jwt-secret\n",
 	)
+	_, env := writeRBWStub(t, "unlocked", map[string]string{
+		rbwLookupKey("shared-dev", "database-url"): "postgres://vault/dev",
+	}, rbwLookupKey("shared-dev", "jwt-secret"))
 
 	stdout, _, code := runCLI(t, bin, project, env, "diff")
 	if code != 2 {

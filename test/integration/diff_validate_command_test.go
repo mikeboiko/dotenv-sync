@@ -8,10 +8,13 @@ import (
 
 func TestDiffValidateAndMissingIntegration(t *testing.T) {
 	bin := buildCLI(t)
-	env := writeRBWStub(t, "unlocked", map[string]string{"database-url": "postgres://vault/dev"}, "jwt-secret")
 
 	t.Run("drift and missing secrets", func(t *testing.T) {
 		project := t.TempDir()
+		itemName := filepath.Base(project)
+		env := writeRBWStub(t, "unlocked", map[string]string{
+			rbwLookupKey(itemName, "database-url"): "postgres://vault/dev",
+		}, rbwLookupKey(itemName, "jwt-secret"))
 		writeFile(t, filepath.Join(project, ".env.example"), "DATABASE_URL=\nJWT_SECRET=\nPORT=8080\n")
 		writeFile(t, filepath.Join(project, ".env"), "DATABASE_URL=postgres://vault/dev\nPORT=9090\nEXTRA_KEY=value\n")
 		writeFile(t, filepath.Join(project, ".envsync.yaml"), "mapping:\n  DATABASE_URL: database-url\n  JWT_SECRET: jwt-secret\n")
@@ -34,6 +37,10 @@ func TestDiffValidateAndMissingIntegration(t *testing.T) {
 
 	t.Run("duplicate and malformed schema", func(t *testing.T) {
 		project := t.TempDir()
+		itemName := filepath.Base(project)
+		env := writeRBWStub(t, "unlocked", map[string]string{
+			rbwLookupKey(itemName, "DATABASE_URL"): "value",
+		})
 		writeFile(t, filepath.Join(project, ".env.example"), "DATABASE_URL=\nDATABASE_URL=\nBAD LINE\n")
 		writeFile(t, filepath.Join(project, ".env"), "DATABASE_URL=value\n")
 		stdout, _, code := runCLI(t, bin, project, env, "validate")

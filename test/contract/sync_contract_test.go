@@ -9,11 +9,11 @@ import (
 
 func TestContractSync(t *testing.T) {
 	bin := buildCLI(t)
+	project := setupProject(t, "# Application settings\nDATABASE_URL=\nJWT_SECRET=\nPORT=8080\n", "", "item_name: shared-dev\nmapping:\n  DATABASE_URL: database-url\n  JWT_SECRET: jwt-secret\n")
 	_, env := writeRBWStub(t, "unlocked", map[string]string{
-		"database-url": "postgres://vault/dev",
-		"jwt-secret":   "topsecret",
+		rbwLookupKey("shared-dev", "database-url"): "postgres://vault/dev",
+		rbwLookupKey("shared-dev", "jwt-secret"):   "topsecret",
 	})
-	project := setupProject(t, "# Application settings\nDATABASE_URL=\nJWT_SECRET=\nPORT=8080\n", "", "mapping:\n  DATABASE_URL: database-url\n  JWT_SECRET: jwt-secret\n")
 
 	stdout, stderr, code := runCLI(t, bin, project, env, "sync", "--dry-run")
 	if code != 0 || stderr != "" {

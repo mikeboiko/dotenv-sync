@@ -9,10 +9,13 @@ import (
 
 func TestSyncCommandIntegration(t *testing.T) {
 	bin := buildCLI(t)
-	env := writeRBWStub(t, "unlocked", map[string]string{"database-url": "postgres://vault/dev", "jwt-secret": "supersecret"})
 	project := t.TempDir()
+	itemName := filepath.Base(project)
+	env := writeRBWStub(t, "unlocked", map[string]string{
+		rbwLookupKey(itemName, "DATABASE_URL"): "postgres://vault/dev",
+		rbwLookupKey(itemName, "JWT_SECRET"):   "supersecret",
+	})
 	writeFile(t, filepath.Join(project, ".env.example"), "# heading\r\nDATABASE_URL=\r\nJWT_SECRET=\r\nPORT=8080\r\n")
-	writeFile(t, filepath.Join(project, ".envsync.yaml"), "mapping:\n  DATABASE_URL: database-url\n  JWT_SECRET: jwt-secret\n")
 
 	stdout, stderr, code := runCLI(t, bin, project, env, "sync")
 	if code != 0 || stderr != "" {
