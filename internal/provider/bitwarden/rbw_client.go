@@ -100,7 +100,7 @@ func (c *RBWClient) mutateItem(ctx context.Context, commandName, itemName, passw
 	if err != nil {
 		return err
 	}
-	_, err = c.run(ctx, []string{
+	_, err = c.runInteractive(ctx, []string{
 		"DS_RBW_EDITOR_SOURCE=" + sourcePath,
 		"EDITOR=" + editorPath,
 		"VISUAL=" + editorPath,
@@ -109,6 +109,36 @@ func (c *RBWClient) mutateItem(ctx context.Context, commandName, itemName, passw
 		return err
 	}
 	return nil
+}
+
+func (c *RBWClient) runInteractive(ctx context.Context, extraEnv []string, args ...string) (string, error) {
+	if runtime.GOOS == "windows" {
+		return c.run(ctx, extraEnv, args...)
+	}
+	if _, err := exec.LookPath(c.Bin); err != nil {
+		return "", ErrBinaryMissing
+	}
+	scriptBin, err := exec.LookPath("script")
+	if err != nil {
+		return c.run(ctx, extraEnv, args...)
+	}
+	commandLine := shellQuote(c.Bin)
+	for _, arg := range args {
+		commandLine += " " + shellQuote(arg)
+	}
+	cmd := exec.CommandContext(ctx, scriptBin, "-q", "-c", commandLine, "/dev/null")
+	if len(extraEnv) > 0 {
+		cmd.Env = append(os.Environ(), extraEnv...)
+	}
+	out, err := cmd.CombinedOutput()
+	text := strings.TrimSpace(string(out))
+	if err != nil {
+		if text == "" {
+			return text, fmt.Errorf("rbw %s failed: %w", strings.Join(args, " "), err)
+		}
+		return text, fmt.Errorf("%s", text)
+	}
+	return text, nil
 }
 
 func renderEditorContent(password, notes string) string {
@@ -166,4 +196,8 @@ func isNotFoundText(parts ...any) bool {
 		}
 	}
 	return false
+}
+
+func shellQuote(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "'\\''") + "'"
 }

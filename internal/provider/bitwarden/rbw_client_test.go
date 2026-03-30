@@ -38,6 +38,7 @@ func TestRBWClientMutationsUseScriptedEditor(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "rbw")
 	logPath := filepath.Join(dir, "rbw.log")
+	scriptLogPath := filepath.Join(dir, "script.log")
 	addCapture := filepath.Join(dir, "add.txt")
 	editCapture := filepath.Join(dir, "edit.txt")
 	script := "#!/bin/sh\n" +
@@ -58,6 +59,14 @@ func TestRBWClientMutationsUseScriptedEditor(t *testing.T) {
 	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}
+	ptyWrapper := filepath.Join(dir, "script")
+	ptyWrapperContent := "#!/bin/sh\n" +
+		"echo \"$@\" >> '" + scriptLogPath + "'\n" +
+		"exec /bin/sh -c \"$3\"\n"
+	if err := os.WriteFile(ptyWrapper, []byte(ptyWrapperContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
 
 	client := &RBWClient{Bin: bin}
 	if err := client.AddItem(context.Background(), "repo", "", "{\"env\":{}}"); err != nil {
@@ -87,6 +96,13 @@ func TestRBWClientMutationsUseScriptedEditor(t *testing.T) {
 	}
 	if !strings.Contains(string(logData), "add repo") || !strings.Contains(string(logData), "edit repo") {
 		t.Fatalf("unexpected rbw log: %s", logData)
+	}
+	scriptLogData, err := os.ReadFile(scriptLogPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(scriptLogData), "-q -c") {
+		t.Fatalf("expected script wrapper usage, got %q", string(scriptLogData))
 	}
 }
 
