@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -30,6 +31,18 @@ func buildCLI(t *testing.T) string {
 	return bin
 }
 
+func buildCLIWithLdflags(t *testing.T, version, commit, buildTime string) string {
+	t.Helper()
+	bin := filepath.Join(t.TempDir(), "ds")
+	ldflags := fmt.Sprintf("-X dotenv-sync/pkg/dotenvsync.Version=%s -X dotenv-sync/pkg/dotenvsync.Commit=%s -X dotenv-sync/pkg/dotenvsync.BuildTime=%s", version, commit, buildTime)
+	cmd := exec.Command("go", "build", "-ldflags", ldflags, "-o", bin, "./cmd/ds")
+	cmd.Dir = repoRoot(t)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("build cli with ldflags: %v\n%s", err, out)
+	}
+	return bin
+}
+
 func runCLI(t *testing.T, bin, dir string, extraEnv []string, args ...string) (string, string, int) {
 	t.Helper()
 	cmd := exec.Command(bin, args...)
@@ -47,6 +60,28 @@ func runCLI(t *testing.T, bin, dir string, extraEnv []string, args ...string) (s
 	}
 	t.Fatalf("run cli: %v", err)
 	return "", "", 0
+}
+
+func readRepoFile(t *testing.T, parts ...string) string {
+	t.Helper()
+	path := filepath.Join(append([]string{repoRoot(t)}, parts...)...)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return string(data)
+}
+
+func renderTemplate(input string, replacements map[string]string) string {
+	output := input
+	for old, newValue := range replacements {
+		output = strings.ReplaceAll(output, old, newValue)
+	}
+	return output
+}
+
+func currentPlatform() string {
+	return runtime.GOOS + "/" + runtime.GOARCH
 }
 
 func writeFile(t *testing.T, path, content string) {
