@@ -35,6 +35,20 @@ go build -o ./bin/ds \
 ./bin/ds version
 ```
 
+## Install the current checkout into `~/.local/bin/ds`
+
+```bash
+git switch main
+git pull --ff-only
+./scripts/install-local.sh
+ds version
+```
+
+If `main` is exactly on the latest release tag, the reported version matches the
+latest GitHub release. If `main` is ahead of the latest release, the script uses
+Git-derived metadata such as `v0.4.0-3-gabc1234` so the local build remains
+distinguishable from the last published release.
+
 ## Preview the next release version locally
 
 ```bash

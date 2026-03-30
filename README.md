@@ -27,6 +27,42 @@ Local development builds report `dev` metadata by default. Release builds inject
 their version, commit, and build time at build time instead of editing source
 files.
 
+## Keep `ds` up to date locally
+
+If you keep `ds` in `~/.local/bin/ds`, the simplest update flow is:
+
+```bash
+git switch main
+git pull --ff-only
+./scripts/install-local.sh
+```
+
+By default `./scripts/install-local.sh` installs to `~/.local/bin/ds`. You can
+override that with `--bin /custom/path/to/ds`.
+
+If you use this repository's `lefthook` setup, `lefthook install` also enables
+automatic local refreshes after `git commit` and `git merge` on the default
+branch. Those hooks call `./scripts/install-local.sh --quiet` through
+`./scripts/install-local-hook.sh`, and they intentionally skip non-default
+branches so feature work does not overwrite your globally installed `ds`.
+
+The script injects version metadata from your current checkout:
+
+- exact release tag checkout: `v0.4.0`
+- commits ahead of a release: `v0.4.0-3-gabc1234`
+- no release tags yet: `dev-abc1234`
+
+That means:
+
+- if `main` is exactly on the latest release tag, `ds version` matches what a
+  GitHub release installer sees
+- if `main` is ahead of the latest release, your local build intentionally shows
+  a newer git-derived version so it does not pretend to be the last published
+  release
+
+If you want the exact same version string as the latest GitHub release, build
+from the release tag or install the GitHub release artifact.
+
 ## Add `ds` to your `PATH`
 
 You can always run the binary directly as `./bin/ds` (or `bin\ds.exe` on
@@ -212,6 +248,12 @@ go build -o ./bin/ds \
 
 ./bin/ds --version
 ./bin/ds version
+```
+
+To install straight into `~/.local/bin/ds` with Git-derived version metadata:
+
+```bash
+./scripts/install-local.sh
 ```
 
 To preview the next release version from the current repository tags:
