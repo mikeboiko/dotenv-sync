@@ -1,49 +1,42 @@
-# Data Model: Version reporting and release automation
+# Data Model: Automatic patch release automation
 
-## Version Metadata
+## Release Trigger
 
-- **Purpose**: Represents the build-identifying values embedded into a `ds`
-  binary and exposed through the CLI.
+- **Purpose**: Represents the push event that may start an automatic release.
 - **Fields**:
-  - `version`: semantic version string with `v` prefix for releases, or `dev`
-    for local builds
-  - `commit`: Git SHA or fallback placeholder such as `none`
-  - `build_time`: UTC timestamp string or fallback placeholder such as `unknown`
-  - `platform`: runtime platform string such as `linux/amd64`
-  - `source`: enum describing whether metadata came from injected release values
-    or local defaults
+  - `event_name`: workflow event type, expected to be `push`
+  - `branch`: pushed branch name, expected to be `main`
+  - `commit`: full Git SHA for the pushed commit
+  - `actor`: GitHub user or app that pushed the commit
+  - `already_released`: boolean indicating whether a reachable semver tag already
+    points at the commit
 - **Validation rules**:
-  - `version` must be non-empty
-  - release versions must follow semantic versioning with a leading `v`
-  - `build_time` must be machine-readable when injected
-
-## Release Request
-
-- **Purpose**: Captures the maintainer input to the manual release workflow.
-- **Fields**:
-  - `bump`: enum with `major`, `minor`, or `patch`
-  - `target_ref`: Git ref the workflow is releasing from
-  - `notes`: optional release notes override
-  - `requested_by`: GitHub actor that triggered the workflow
-- **Validation rules**:
-  - `bump` must be one of the supported semver levels
-  - `target_ref` must resolve to the default branch head before publication
+  - `event_name` must be `push`
+  - `branch` must equal the repository default branch before publication begins
+  - `commit` must be non-empty
+  - `already_released` is derived from Git tag state, not GitHub release
+    metadata
 
 ## Release Publication
 
 - **Purpose**: Represents the computed release outcome before and after
-  publishing.
+  publication.
 - **Fields**:
   - `previous_version`: latest reachable semver tag or `v0.0.0`
-  - `next_version`: computed semantic version to publish
-  - `tag_name`: Git tag to create, identical to `next_version`
+  - `next_version`: computed patch version to publish
   - `commit`: commit SHA included in the release build
-  - `status`: enum such as `planned`, `validated`, `built`, `published`, or
-    `failed`
+  - `status`: enum such as `planned`, `validated`, `built`, `published`,
+    `skipped`, or `failed`
+  - `skip_reason`: optional explanation when publication is intentionally skipped
   - `release_url`: GitHub release URL after publication
 - **Validation rules**:
-  - `next_version` must be strictly greater than `previous_version`
-  - `tag_name` must not already exist before publication starts
+  - `next_version` must be strictly greater than `previous_version` when
+    `status` reaches `published`
+  - a single `commit` may have at most one `published` release
+  - `skip_reason` is required when `status` is `skipped`
+  - if a semver tag already points at `commit`, the workflow treats the
+    publication as `skipped` even when a GitHub release record needs manual
+    repair
 
 ## Release Artifact
 
@@ -59,16 +52,31 @@
   - `archive_name` must include the exact release version
   - all artifacts for one publication must share the same `version`
 
+## Version Metadata
+
+- **Purpose**: Represents the build-identifying values embedded into a `ds`
+  binary and checked during release verification.
+- **Fields**:
+  - `version`: semantic version string with a leading `v`
+  - `commit`: Git SHA embedded into the binary
+  - `build_time`: UTC build timestamp string
+  - `platform`: runtime platform string such as `linux/amd64`
+- **Validation rules**:
+  - `version` must equal the release tag for published artifacts
+  - `build_time` must be machine-readable when injected
+
 ## Relationships
 
-- One **Release Request** produces zero or one **Release Publication**.
+- One **Release Trigger** produces zero or one **Release Publication**.
 - One **Release Publication** may contain many **Release Artifacts**.
-- One built `ds` binary exposes one **Version Metadata** record at runtime.
-- Every **Release Artifact** must embed the **Version Metadata** associated with
-  its parent **Release Publication**.
+- One published **Release Publication** must correspond to exactly one `main`
+  commit.
+- Every published **Release Artifact** must embed the **Version Metadata** of its
+  parent **Release Publication**.
 
 ## State Transitions
 
-- **Release Publication**: `planned -> validated -> built -> published`
+- **Release Publication** success path: `planned -> validated -> built -> published`
+- **Release Publication** skip path: `planned -> skipped`
 - **Release Publication** failure path: `planned|validated|built -> failed`
 - **Release Artifact**: `packaged -> attached`

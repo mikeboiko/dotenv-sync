@@ -259,8 +259,23 @@ go test ./... -bench . -run '^$'
 
 ## Build a local versioned binary
 
+Preview the next automatic patch release from the current reachable semver tags:
+
 ```bash
-VERSION=v0.1.0
+go run ./scripts/nextversion
+```
+
+Example outputs:
+
+```text
+v0.0.1
+v0.4.3
+```
+
+Then build a local binary with that predicted release metadata:
+
+```bash
+VERSION=$(go run ./scripts/nextversion)
 COMMIT=$(git rev-parse --short HEAD)
 BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
@@ -272,16 +287,13 @@ go build -o ./bin/ds \
 ./bin/ds version
 ```
 
+Local development builds without injected metadata fall back to `dev`, `none`,
+and `unknown`.
+
 To install straight into `~/.local/bin/ds` with Git-derived version metadata:
 
 ```bash
 ./scripts/install-local.sh
-```
-
-To preview the next release version from the current repository tags:
-
-```bash
-go run ./scripts/nextversion --bump patch
 ```
 
 ## CI
@@ -289,9 +301,20 @@ go run ./scripts/nextversion --bump patch
 GitHub Actions runs `go test ./...` on every push via
 `.github/workflows/go-tests.yml`.
 
-GitHub Actions also supports a manual release workflow in
-`.github/workflows/release.yml`. It must be triggered from the repository's
-default branch head (typically `main`), computes the next semantic version from
-existing `vX.Y.Z` tags, runs `go test ./...`, builds versioned archives, checks
-the Linux release artifact with `ds --version`, and then publishes the GitHub
-release.
+GitHub Actions also runs `.github/workflows/release.yml` automatically on every
+push to `main`. The workflow computes the next patch version from reachable
+`vX.Y.Z` tags, skips reruns when the pushed commit is already released by a
+semver tag, runs `go test ./...`, builds versioned archives, verifies the Linux
+reference artifact with `ds --version`, and then publishes the GitHub release.
+
+You can monitor the latest automatic release run with:
+
+```bash
+gh run list --workflow release.yml --limit 1
+gh run watch <run-id>
+```
+
+If a rerun finds that the commit already has a release tag, the workflow exits
+without publishing again. If the tag exists but the GitHub release record is
+missing, repair that release manually instead of expecting the workflow to
+recreate it.

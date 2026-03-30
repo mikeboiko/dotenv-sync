@@ -1,82 +1,105 @@
-# Research: Version reporting and release automation
+# Research: Automatic patch release automation
 
-## Decision 1: Inject version metadata at build time with mutable Go variables
+## Decision 1: Reuse embedded version metadata only for release verification
 
-- **Decision**: Replace the current constant-only version placeholder with
-  mutable package variables for semantic version, commit SHA, and build time, and
-  populate them through `go build -ldflags -X`.
-- **Rationale**: This is the standard Go pattern for CLI version reporting,
-  avoids per-release source edits, and keeps local development builds usable by
-  falling back to deterministic defaults like `dev`, `none`, and `unknown`.
+- **Decision**: Keep build metadata injection and the existing CLI version
+  surfaces as the source used to verify built artifacts before publication,
+  rather than introducing a second release-verification mechanism.
+- **Rationale**: The binary already exposes trustworthy metadata through
+  `ds --version` and `ds version`, so the release workflow can validate a built
+  artifact without adding runtime dependencies or new operator-facing commands.
 - **Alternatives considered**:
-  - Hard-code versions in source on each release: rejected because it is easy to
-    forget and creates noisy commits.
-  - Read Git metadata at runtime: rejected because installed binaries may not run
-    in a Git checkout and version inspection should not depend on repository
-    state.
+  - Add a separate release verification binary or script output format: rejected
+    because it duplicates version truth and adds maintenance overhead.
+  - Skip artifact self-verification entirely: rejected because automatic
+    publication should confirm that released binaries report the version they
+    contain.
 
-## Decision 2: Support both a quick flag and a detailed command
+## Decision 2: Trigger release automation on pushes to the default branch and always bump patch
 
-- **Decision**: Provide a concise `ds --version` output path and a richer
-  `ds version` command that prints detailed build metadata from the same shared
-  source.
-- **Rationale**: The quick flag matches common CLI expectations for scripts and
-  support checks, while the subcommand provides enough detail for debugging and
-  release verification without inventing multiple metadata sources.
+- **Decision**: Replace manual `workflow_dispatch` release creation with an
+  automatic workflow that runs on pushes to `main` and always computes the next
+  patch version.
+- **Rationale**: The user asked for automatic patch bumps on every push to
+  `main`, and eliminating manual bump selection removes the remaining human step
+  in the release path.
 - **Alternatives considered**:
-  - Expose only `ds version`: rejected because users explicitly asked for
-    `--version` and many CLIs support the flag.
-  - Expose only `--version`: rejected because one-line output is too limited for
-    commit and build-time inspection.
+  - Keep manual dispatch with a default `patch` input: rejected because it still
+    requires a maintainer to trigger each release.
+  - Use commit messages or labels to select major/minor/patch bumps: rejected
+    because the requested behavior is patch-only and the repository does not rely
+    on commit-convention parsing today.
 
-## Decision 3: Use semver Git tags as the release source of truth
+## Decision 3: Continue treating semver Git tags as the release source of truth
 
-- **Decision**: Treat the highest reachable semver tag as the current release,
-  compute the next version from a `major`, `minor`, or `patch` bump, ignore
-  unrelated tags, and use `v0.0.0` as the no-tag baseline.
-- **Rationale**: Git tags are the canonical release identifier for a Go CLI and
-  avoid splitting version truth between source files, workflows, and GitHub
-  Releases.
+- **Decision**: Compute the next patch version from the latest reachable semver
+  tag, ignore unrelated tags, and use `v0.0.0` when no semver tag exists.
+- **Rationale**: Git tags remain the canonical release identifier for a Go CLI,
+  and patch-only automation can build on the existing tag-based logic without
+  splitting release truth across source files, workflows, and GitHub Releases.
 - **Alternatives considered**:
   - Maintain a checked-in `VERSION` file: rejected because it duplicates Git tag
     state and invites drift.
-  - Use Release Please or commit-convention-driven automation: rejected because
-    the user chose a manual GitHub Actions bump workflow and the repo does not
-    currently enforce commit conventions.
+  - Derive versions from GitHub Releases instead of tags: rejected because tags
+    are cheaper to inspect locally and already drive the current release helper.
 
-## Decision 4: Keep release automation lean with GitHub Actions, `go build`, and `gh`
+## Decision 4: Use semver tags on the commit as the idempotency source of truth
 
-- **Decision**: Implement release automation as a `workflow_dispatch` GitHub
-  Actions workflow that runs `go test ./...`, builds the supported target
-  matrix with injected metadata, and publishes a GitHub release through `gh`.
-- **Rationale**: This uses tooling already available on GitHub-hosted runners,
-  avoids adding runtime dependencies to `ds`, and keeps the release path readable
-  for maintainers.
+- **Decision**: Serialize release runs for `main` and treat a reachable semver
+  tag that already points at the pushed commit as the idempotency source of
+  truth so reruns or overlapping pushes cannot create duplicate releases.
+- **Rationale**: Automatic release triggers increase the chance of race
+  conditions and reruns, so the workflow must protect release state with a
+  single canonical signal. Tags are already the release source of truth, so a
+  tag pointing at the commit is safer than inferring state from the GitHub
+  release record alone.
 - **Alternatives considered**:
-  - Add GoReleaser: rejected for the first cut because it introduces additional
-    configuration and third-party workflow dependencies beyond the current needs.
-  - Push tags and releases from a local maintainer machine: rejected because it
-    is less repeatable and harder to audit.
+  - Allow concurrent release jobs and trust tag creation to fail one of them:
+    rejected because it creates noisy partial states and harder-to-debug logs.
+  - Use GitHub release records rather than tags to detect reruns: rejected
+    because release metadata can drift from the canonical Git tag state.
+  - Always fail reruns on already released commits: rejected because a clear
+    no-op or skip result is safer and easier for maintainers to interpret.
 
-## Decision 5: Publish only after validation and builds succeed
+## Decision 5: Treat tag-without-release drift as a manual repair case
 
-- **Decision**: The workflow must compute the next version, run tests, build all
-  release artifacts, and only then create the tag and GitHub release.
-- **Rationale**: This prevents partial releases where a tag exists but the build
-  artifacts or release publication failed, which would make `ds --version` trust
-  worse rather than better.
+- **Decision**: If a semver tag already points at the commit but the
+  corresponding GitHub release record is missing or incomplete, the workflow
+  skips automatic publication and asks the maintainer to repair the release
+  state manually.
+- **Rationale**: Automatic recreation could mask partial-release problems or
+  attach artifacts to the wrong history. A visible skip keeps the canonical tag
+  state intact and avoids publishing duplicate versions.
 - **Alternatives considered**:
-  - Create the tag before builds start: rejected because a failed build would
+  - Recreate the GitHub release automatically from the existing tag: rejected
+    because it blurs the line between idempotent reruns and manual recovery.
+  - Delete and recreate the tag automatically: rejected because it is
+    destructive and risky in CI.
+
+## Decision 6: Publish only after validation and all builds succeed
+
+- **Decision**: The workflow must compute the next patch version, run tests,
+  build the full artifact matrix, verify at least one built binary, and only
+  then create the tag and GitHub release.
+- **Rationale**: This prevents partial releases where a tag exists but artifacts
+  or verification failed, which would make automatic publication less
+  trustworthy than the current manual process.
+- **Alternatives considered**:
+  - Create the tag before builds start: rejected because failed builds would
     leave behind misleading release state.
-  - Publish per-platform artifacts incrementally: rejected because the release
-    should be all-or-nothing for maintainers and users.
+  - Publish artifacts incrementally by platform: rejected because automatic
+    releases should remain all-or-nothing.
 
-## Decision 6: Document local injection and maintainer release steps
+## Decision 7: Keep local preview and documentation aligned with the automated flow
 
-- **Decision**: Update README and quickstart examples so contributors can build a
-  local versioned binary, inspect it, and trigger the manual release workflow.
-- **Rationale**: Versioning only helps if users and maintainers can discover the
-  supported commands and release path without reading implementation details.
+- **Decision**: Maintain a repository-local preview helper and update README plus
+  quickstart guidance so contributors can predict the next patch version,
+  observe the automatic workflow, and verify published artifacts.
+- **Rationale**: Automatic releases are only understandable if contributors can
+  reproduce the version calculation locally and recognize the CI behavior from
+  the documentation.
 - **Alternatives considered**:
-  - Document only the GitHub workflow: rejected because contributors also need a
-    reproducible local verification path.
+  - Document only the workflow file: rejected because contributors still need a
+    fast local preview path.
+  - Remove the preview helper and rely on reading tags manually: rejected
+    because that makes CI behavior harder to validate before pushing.
