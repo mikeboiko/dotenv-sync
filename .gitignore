@@ -28,7 +28,10 @@ go.work.sum
 .env
 
 # Build output
+/ds
 /bin/
+/dist/
+/.release/
 vendor/
 
 # Other
