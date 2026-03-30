@@ -55,8 +55,7 @@ func (c *RBWClient) run(ctx context.Context, extraEnv []string, args ...string) 
 func (c *RBWClient) GetRawItem(ctx context.Context, itemName string) (RawItem, error) {
 	out, err := c.Run(ctx, "get", "--raw", itemName)
 	if err != nil {
-		lower := strings.ToLower(out + " " + err.Error())
-		if strings.Contains(lower, "not found") || strings.Contains(lower, "no item") || strings.Contains(lower, "missing") {
+		if isNotFoundText(out, err) {
 			return RawItem{}, ErrItemNotFound
 		}
 		return RawItem{}, err
@@ -134,4 +133,37 @@ func writeEditorScript(dir string) (string, error) {
 		return "", fmt.Errorf("write editor script: %w", err)
 	}
 	return path, nil
+}
+
+func isNotFoundText(parts ...any) bool {
+	var builder strings.Builder
+	for i, part := range parts {
+		if i > 0 {
+			builder.WriteByte(' ')
+		}
+		switch value := part.(type) {
+		case string:
+			builder.WriteString(value)
+		case error:
+			builder.WriteString(value.Error())
+		default:
+			builder.WriteString(fmt.Sprint(value))
+		}
+	}
+	lower := strings.ToLower(builder.String())
+	needles := []string{
+		"not found",
+		"no item",
+		"missing",
+		"no entry found",
+		"no such entry",
+		"couldn't find entry",
+		"could not find entry",
+	}
+	for _, needle := range needles {
+		if strings.Contains(lower, needle) {
+			return true
+		}
+	}
+	return false
 }

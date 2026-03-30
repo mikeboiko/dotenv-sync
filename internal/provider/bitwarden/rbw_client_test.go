@@ -2,6 +2,7 @@ package bitwarden
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -86,5 +87,21 @@ func TestRBWClientMutationsUseScriptedEditor(t *testing.T) {
 	}
 	if !strings.Contains(string(logData), "add repo") || !strings.Contains(string(logData), "edit repo") {
 		t.Fatalf("unexpected rbw log: %s", logData)
+	}
+}
+
+func TestRBWClientGetRawItemTreatsNoEntryFoundAsMissing(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "rbw")
+	script := "#!/bin/sh\n" +
+		"echo \"rbw get: couldn't find entry for '$3': no entry found\" >&2\n" +
+		"exit 1\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	_, err := (&RBWClient{Bin: bin}).GetRawItem(context.Background(), "repo")
+	if !errors.Is(err, ErrItemNotFound) {
+		t.Fatalf("expected ErrItemNotFound, got %v", err)
 	}
 }

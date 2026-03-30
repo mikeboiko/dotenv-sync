@@ -57,7 +57,7 @@ func (a *Adapter) resolveField(ctx context.Context, key, ref string) (provider.R
 	resolution := provider.Resolution{Key: key, Ref: cacheKey}
 	if err != nil {
 		lower := strings.ToLower(err.Error() + " " + out)
-		if strings.Contains(lower, "not found") || strings.Contains(lower, "missing") || strings.Contains(lower, "no item") || strings.Contains(lower, "no such field") || strings.Contains(lower, "field not found") {
+		if isNotFoundText(out, err) || strings.Contains(lower, "no such field") || strings.Contains(lower, "field not found") {
 			resolution.Source = "missing"
 			resolution.IssueCode = "E005"
 		} else {

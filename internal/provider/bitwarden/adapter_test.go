@@ -130,3 +130,28 @@ func TestAdapterLoadEnvPayloadRejectsMalformedNotes(t *testing.T) {
 		t.Fatalf("expected malformed payload error, got %v", err)
 	}
 }
+
+func TestAdapterResolveTreatsNoEntryFoundAsMissing(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "rbw")
+	script := "#!/bin/sh\n" +
+		"echo \"rbw get: couldn't find entry for '$4': no entry found\" >&2\n" +
+		"exit 1\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	adapter := &Adapter{
+		client: &RBWClient{Bin: bin},
+		cfg:    config.Config{ItemName: "my-repo"},
+		cache:  map[string]provider.Resolution{},
+	}
+
+	resolution, err := adapter.Resolve(context.Background(), "DATABASE_URL", "DATABASE_URL")
+	if err != nil {
+		t.Fatalf("resolve: %v", err)
+	}
+	if resolution.Source != "missing" || resolution.IssueCode != "E005" {
+		t.Fatalf("expected missing resolution, got %+v", resolution)
+	}
+}

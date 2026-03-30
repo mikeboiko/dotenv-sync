@@ -2,6 +2,7 @@ package contract_test
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -78,6 +79,15 @@ func renderTemplate(input string, replacements map[string]string) string {
 		output = strings.ReplaceAll(output, old, newValue)
 	}
 	return output
+}
+
+func compactJSON(t *testing.T, input string) string {
+	t.Helper()
+	var buf bytes.Buffer
+	if err := json.Compact(&buf, []byte(input)); err != nil {
+		t.Fatalf("compact json: %v", err)
+	}
+	return buf.String()
 }
 
 func currentPlatform() string {

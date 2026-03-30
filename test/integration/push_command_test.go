@@ -39,8 +39,8 @@ func TestPushCommandIntegration(t *testing.T) {
 		if !strings.Contains(stdout, "WRITTEN bitwarden:Jesse (added: 3)") {
 			t.Fatalf("unexpected create summary: %s", stdout)
 		}
-		wantNotes := strings.TrimSpace(readRepoFile(t, "test", "testdata", "provider", "note-json-valid.json"))
-		if notes := strings.TrimSpace(stub.Note(t, itemName)); notes != wantNotes {
+		wantNotes := compactJSON(t, strings.TrimSpace(readRepoFile(t, "test", "testdata", "provider", "note-json-valid.json")))
+		if notes := compactJSON(t, strings.TrimSpace(stub.Note(t, itemName))); notes != wantNotes {
 			t.Fatalf("unexpected created notes = %q want %q", notes, wantNotes)
 		}
 		if got := strings.Count(stub.Log(t), "add Jesse"); got != 1 {

@@ -50,8 +50,8 @@ func TestContractPush(t *testing.T) {
 		if !strings.Contains(stdout, "WRITTEN bitwarden:Jesse (added: 3)") {
 			t.Fatalf("unexpected push summary: %s", stdout)
 		}
-		notes := strings.TrimSpace(stub.Note(t, itemName))
-		wantNotes := strings.TrimSpace(readRepoFile(t, "test", "testdata", "provider", "note-json-valid.json"))
+		notes := compactJSON(t, strings.TrimSpace(stub.Note(t, itemName)))
+		wantNotes := compactJSON(t, strings.TrimSpace(readRepoFile(t, "test", "testdata", "provider", "note-json-valid.json")))
 		if notes != wantNotes {
 			t.Fatalf("unexpected provider notes = %q want %q", notes, wantNotes)
 		}
