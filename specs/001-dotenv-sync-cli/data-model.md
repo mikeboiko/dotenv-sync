@@ -56,14 +56,19 @@ Represents optional project configuration from `.envsync.yaml`.
 | provider   | string            | Selected provider family, defaulting to `bitwarden` and implemented through `rbw` in the MVP |
 | schemaFile | string            | Override path for `.env.example`                                                             |
 | envFile    | string            | Override path for `.env`                                                                     |
+| itemName   | string            | Override for the default repo-scoped Bitwarden item name used for provider lookups           |
 | vault      | string            | Optional vault or collection hint                                                            |
-| mapping    | map[string]string | Schema key to provider lookup mapping                                                        |
+| mapping    | map[string]string | Schema key to Bitwarden field-name override within the selected item                         |
 
 **Validation rules**:
 
 - `provider` must map to a registered adapter.
 - `schemaFile` and `envFile` must not point to the same path.
+- `itemName` defaults to the Git repository root directory name, or the
+  current working-directory name when Git metadata is unavailable.
 - Mapping keys must be unique and reference valid schema keys when used.
+- Mapping values override the default field name for a schema key but stay
+  within the selected Bitwarden item in the MVP design.
 
 ### ProviderStatus
 

@@ -131,3 +131,24 @@
   - Shipping both `rbw` and `bw` support in MVP: Rejected because it expands
     testing, diagnostics, and UX complexity before the core workflow is
     proven.
+
+## Decision 10: Default Bitwarden lookups to one repo-scoped item with env-var fields
+
+- **Decision**: Resolve unmapped provider-managed schema keys with
+  `rbw get <item-name> --field <ENV_VAR>`, where `<item-name>` defaults to the
+  Git repository root directory name and falls back to the current working
+  directory name when Git metadata is unavailable. Support an optional config
+  override for the item name plus per-key field-name overrides.
+- **Rationale**: A single Bitwarden item per repository avoids a flat global
+  namespace of env-var item names, keeps the default mental model
+  project-scoped, and maps naturally onto Bitwarden custom fields. This also
+  makes onboarding easier because a team can share one well-named item per
+  repo and let `ds` infer the rest from the schema.
+- **Alternatives considered**:
+  - Global env-var item names only: Rejected because names like `JWT_SECRET`
+    and `DATABASE_URL` collide across repositories and environments.
+  - One item per env var inside a repo-named folder: Rejected because it keeps
+    repo scoping but creates more Bitwarden objects to manage and explain.
+  - Prefixing item names with the repo name: Rejected because it encodes
+    structure into free-form item names instead of using a stable item-plus-
+    field model.

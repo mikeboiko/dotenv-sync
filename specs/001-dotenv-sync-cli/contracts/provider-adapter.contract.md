@@ -30,7 +30,12 @@ The initial Go interface is expected to support these behaviors:
 ## Bitwarden-Specific Expectations
 
 - Readiness checks use the `rbw` CLI directly.
-- Mapping may point a schema key to a custom Bitwarden item or field reference.
+- The default Bitwarden item name is derived from the Git repository root
+  directory name, falling back to the current working-directory name when Git
+  metadata is unavailable.
+- Unmapped schema keys resolve as `rbw get <item-name> --field <schema-key>`.
+- Config may override the Bitwarden item name and may remap individual schema
+  keys to alternate field names within that item.
 - The adapter caches repeated lookups within a command to satisfy the
   performance budget.
 - Unlock and login failures surface actionable recovery guidance.
