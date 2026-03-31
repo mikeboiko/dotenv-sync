@@ -40,6 +40,22 @@ func TestContractDoctorInitReverse(t *testing.T) {
 		}
 	})
 
+	t.Run("init reports duplicate keys as validation errors", func(t *testing.T) {
+		project := setupProject(t, "", "DATABASE_URL=postgres://localhost/dev\nDATABASE_URL=postgres://localhost/dev2\nPORT=8080\n", "")
+		stdout, stderr, code := runCLI(t, bin, project, nil, "init")
+		if code != 2 {
+			t.Fatalf("init duplicate exit code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		for _, want := range []string{"ERROR E008", "Problem: duplicate key detected: DATABASE_URL", "Action: remove the duplicate and rerun validate"} {
+			if !strings.Contains(stderr, want) {
+				t.Fatalf("init duplicate stderr missing %q\n%s", want, stderr)
+			}
+		}
+		if stdout != "" {
+			t.Fatalf("expected empty stdout, got %q", stdout)
+		}
+	})
+
 	t.Run("reverse dry run adds blank placeholders", func(t *testing.T) {
 		project := setupProject(t, "PORT=8080\n", "PORT=8080\nNEW_API_KEY=abc123\n", "")
 		stdout, stderr, code := runCLI(t, bin, project, nil, "reverse", "--dry-run")

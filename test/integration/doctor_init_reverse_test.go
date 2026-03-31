@@ -48,4 +48,16 @@ func TestDoctorInitAndReverseIntegration(t *testing.T) {
 			t.Fatalf("reverse schema content unexpected: %s", data)
 		}
 	})
+
+	t.Run("init duplicate key surfaces error details", func(t *testing.T) {
+		project := t.TempDir()
+		writeFile(t, filepath.Join(project, ".env"), "API_KEY=first\nAPI_KEY=second\n")
+		stdout, stderr, code := runCLI(t, bin, project, nil, "init")
+		if code != 2 {
+			t.Fatalf("init duplicate code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		}
+		if !strings.Contains(stderr, "ERROR E008") || !strings.Contains(stderr, "duplicate key detected: API_KEY") {
+			t.Fatalf("unexpected init duplicate stderr=%q", stderr)
+		}
+	})
 }

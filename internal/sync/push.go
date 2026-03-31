@@ -161,11 +161,19 @@ func unionKeys(left, right map[string]string) []string {
 }
 
 func issueAsAppError(issue ValidationIssue, impact string) error {
+	return issueAsAppErrorWithExit(issue, report.ExitOperational, impact)
+}
+
+func issueAsValidationError(issue ValidationIssue, impact string) error {
+	return issueAsAppErrorWithExit(issue, report.ExitValidation, impact)
+}
+
+func issueAsAppErrorWithExit(issue ValidationIssue, exitCode int, impact string) error {
 	problem := issue.Message
 	if issue.Key != "" {
 		problem = fmt.Sprintf("%s: %s", issue.Message, issue.Key)
 	}
-	return report.NewAppError(issue.Code, report.ExitOperational, problem, impact, issue.Action, nil)
+	return report.NewAppError(issue.Code, exitCode, problem, impact, issue.Action, nil)
 }
 
 func PreserveAppError(err error, fallback func(error) error) error {

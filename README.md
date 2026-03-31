@@ -239,6 +239,10 @@ ds init --dry-run
 Creates `.env.example` from `.env`, blanking secret-like values while copying
 safe defaults.
 
+If `.env` is malformed or contains duplicate keys, `ds init` returns a
+validation error with actionable diagnostics instead of silently generating a
+schema.
+
 ### `ds missing`
 
 ```bash

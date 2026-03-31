@@ -43,7 +43,7 @@ func PlanInit(cfg config.Config) (Plan, envfile.Document, error) {
 	plan := Plan{Mode: "init", LocalEnv: local, Config: cfg}
 	plan.Issues = append(plan.Issues, collectDocumentIssues(local)...)
 	if len(plan.Issues) > 0 {
-		return plan, envfile.Document{}, report.SilentExit(report.ExitValidation)
+		return plan, envfile.Document{}, issueAsValidationError(plan.Issues[0], "init cannot generate .env.example from the current .env")
 	}
 	target := envfile.InitSchemaFromEnv(local)
 	target.Path = cfg.SchemaFile
