@@ -177,6 +177,8 @@ ds sync --dry-run
 - Resolves blank entries through `rbw` using a repo-scoped item by default
 - Preserves comment order and line endings when rewriting `.env`
 - Produces `WRITTEN`, `UNCHANGED`, and `MISSING` output vocabulary for sync runs
+- On successful writes, prints the changed keys before the final summary without
+  exposing raw values
 - Uses `CHECKED` summaries for dry-run previews
 
 ### `ds push`

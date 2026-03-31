@@ -25,9 +25,15 @@ func newSyncCommand(s streams, opts *rootOptions) *cobra.Command {
 			if err != nil && errors.As(err, &appErr) {
 				return err
 			}
-			for _, change := range plan.Changes {
-				if dryRun || change.ChangeType == "missing" {
+			if dryRun {
+				for _, change := range plan.Changes {
 					fmt.Fprintln(s.stdout, report.ChangeLine(change.ChangeType, change.Key, change.After))
+				}
+			} else {
+				for _, change := range plan.Changes {
+					if change.ChangeType == "missing" {
+						fmt.Fprintln(s.stdout, report.ChangeLine(change.ChangeType, change.Key, change.After))
+					}
 				}
 			}
 			if err != nil {
@@ -49,6 +55,11 @@ func newSyncCommand(s streams, opts *rootOptions) *cobra.Command {
 			}
 			if _, err := envfile.WriteDocument(cfg.EnvFile, target); err != nil {
 				return report.NewAppError("E006", report.ExitOperational, "env file could not be written", "sync could not update .env", "check file permissions and retry", err)
+			}
+			for _, change := range plan.Changes {
+				if change.ChangeType == "add" || change.ChangeType == "update" || change.ChangeType == "extra" {
+					fmt.Fprintln(s.stdout, report.ChangeLine(change.ChangeType, change.Key, change.After))
+				}
 			}
 			fmt.Fprintln(s.stdout, report.SummaryLine(report.StatusWritten, cfg.EnvFile, summary, ""))
 			return nil
