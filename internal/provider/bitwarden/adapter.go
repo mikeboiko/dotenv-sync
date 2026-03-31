@@ -41,7 +41,7 @@ func (a *Adapter) Resolve(ctx context.Context, key, ref string) (provider.Resolu
 func (a *Adapter) resolveField(ctx context.Context, key, ref string) (provider.Resolution, error) {
 	fieldName := ref
 	if fieldName == "" {
-		fieldName = key
+		fieldName = a.cfg.ProviderRef(key)
 	}
 	itemName := a.itemName()
 	cacheKey := itemName + "|" + fieldName
@@ -91,7 +91,22 @@ func (a *Adapter) ResolveMany(ctx context.Context, refs map[string]string) (map[
 
 func (a *Adapter) LoadEnvPayload(ctx context.Context) (provider.EnvPayload, error) {
 	if !a.cfg.UsesNoteJSON() {
-		return provider.EnvPayload{ItemName: a.itemName(), StorageMode: a.cfg.StorageMode, Env: map[string]string{}}, report.NewAppError("E009", report.ExitOperational, "ds push requires storage_mode: note_json", "push cannot safely write into field-based Bitwarden items", "set storage_mode: note_json in .envsync.yaml, migrate the repo item, and retry", nil)
+		itemName := a.itemName()
+		rawItem, err := a.client.GetRawItem(ctx, itemName)
+		if err != nil {
+			if errors.Is(err, ErrItemNotFound) {
+				return provider.EnvPayload{ItemName: itemName, StorageMode: a.cfg.StorageMode, Env: map[string]string{}}, nil
+			}
+			return provider.EnvPayload{}, report.NewAppError("E003", report.ExitOperational, "provider payload could not be loaded", "sync and push cannot read the repo-scoped Bitwarden item", "check rbw and retry", err)
+		}
+		return provider.EnvPayload{
+			ItemName:    itemName,
+			StorageMode: a.cfg.StorageMode,
+			Exists:      true,
+			Notes:       rawItem.Notes,
+			Password:    rawItem.Password,
+			Env:         map[string]string{},
+		}, nil
 	}
 	if payload, ok := a.cachedNotePayload(); ok {
 		return payload, nil
@@ -124,6 +139,9 @@ func (a *Adapter) LoadEnvPayload(ctx context.Context) (provider.EnvPayload, erro
 }
 
 func (a *Adapter) StoreEnvPayload(ctx context.Context, payload provider.EnvPayload) (provider.WriteResult, error) {
+	if !a.cfg.UsesNoteJSON() {
+		return a.storeFieldsPayload(ctx, payload)
+	}
 	notes, err := syncpkg.RenderNoteJSON(payload.Env)
 	if err != nil {
 		return provider.WriteResult{}, report.NewAppError("E010", report.ExitOperational, "provider note_json payload is malformed", "push cannot serialize the current .env into the repo-scoped payload", "fix the local env values and retry", err)
@@ -153,6 +171,34 @@ func (a *Adapter) StoreEnvPayload(ctx context.Context, payload provider.EnvPaylo
 		Password:    payload.Password,
 		Env:         syncpkg.CanonicalEnvMap(payload.Env),
 	})
+	return provider.WriteResult{ItemName: itemName, Created: !payload.Exists, Updated: payload.Exists}, nil
+}
+
+func (a *Adapter) storeFieldsPayload(ctx context.Context, payload provider.EnvPayload) (provider.WriteResult, error) {
+	fieldValues, err := a.collapseFieldValues(payload.Env)
+	if err != nil {
+		return provider.WriteResult{}, err
+	}
+	itemName := payload.ItemName
+	if strings.TrimSpace(itemName) == "" {
+		itemName = a.itemName()
+	}
+	password := payload.Password
+	if value, ok := fieldValues["password"]; ok {
+		password = value
+	}
+	if payload.Exists {
+		if err := a.client.EditItem(ctx, itemName, password, payload.Notes); err != nil {
+			return provider.WriteResult{}, report.NewAppError("E003", report.ExitOperational, "Bitwarden write failed", "push could not update the repo-scoped provider payload", "check rbw and retry", err)
+		}
+	} else {
+		if err := a.client.AddItem(ctx, itemName, password, payload.Notes); err != nil {
+			return provider.WriteResult{}, report.NewAppError("E003", report.ExitOperational, "Bitwarden write failed", "push could not create the repo-scoped provider payload", "check rbw and retry", err)
+		}
+	}
+	if err := a.client.Sync(ctx); err != nil {
+		return provider.WriteResult{}, report.NewAppError("E003", report.ExitOperational, "Bitwarden sync failed", "push could not refresh the local provider cache", "run 'rbw sync' and retry", err)
+	}
 	return provider.WriteResult{ItemName: itemName, Created: !payload.Exists, Updated: payload.Exists}, nil
 }
 
@@ -191,6 +237,21 @@ func (a *Adapter) itemName() string {
 		return "dotenv-sync"
 	}
 	return itemName
+}
+
+func (a *Adapter) collapseFieldValues(values map[string]string) (map[string]string, error) {
+	fields := map[string]string{}
+	for _, key := range report.SortedKeys(values) {
+		fieldName := a.cfg.ProviderRef(key)
+		if fieldName != "password" {
+			return nil, report.NewAppError("E011", report.ExitOperational, "fields-mode push only supports mappings to the Bitwarden password field", "push cannot safely update custom Bitwarden fields through rbw", "map pushed keys to password, or switch to storage_mode: note_json and retry", nil)
+		}
+		if current, ok := fields[fieldName]; ok && current != values[key] {
+			return nil, report.NewAppError("E011", report.ExitOperational, "multiple env keys map to the Bitwarden password field with different values", "push cannot safely collapse conflicting local values into one Bitwarden field", "use one value per shared password field, or switch to storage_mode: note_json and retry", nil)
+		}
+		fields[fieldName] = values[key]
+	}
+	return fields, nil
 }
 
 func (a *Adapter) cachedNotePayload() (provider.EnvPayload, bool) {

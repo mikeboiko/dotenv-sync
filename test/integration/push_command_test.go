@@ -84,24 +84,98 @@ func TestPushCommandIntegration(t *testing.T) {
 		}
 	})
 
-	t.Run("fields mode rejection and extra previews", func(t *testing.T) {
+	t.Run("fields mode password mapping create unchanged and update flows", func(t *testing.T) {
 		project := setupProject(t,
-			"DATABASE_URL=\n",
-			"DATABASE_URL=postgres://vault/dev\nEXTRA_FLAG=true\n",
-			"item_name: Jesse\n",
+			"DB_PASSWD=\nAPP_MODE=repo1\n",
+			"DB_PASSWD=shared-v1\nAPP_MODE=repo1\n",
+			"item_name: Jesse\nmapping:\n  DB_PASSWD: password\n",
+		)
+		stub := writeRBWStubWithOptions(t, rbwStubOptions{Status: "unlocked"})
+
+		stdout, stderr, code := runCLI(t, bin, project, stub.Env(), "push", "--dry-run")
+		if code != 0 || stderr != "" {
+			t.Fatalf("fields push dry-run failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
+		}
+		if !strings.Contains(stdout, "ADD DB_PASSWD [REDACTED]") || !strings.Contains(stdout, "CHECKED bitwarden:Jesse (added: 1, dry-run)") {
+			t.Fatalf("unexpected fields dry-run stdout: %s", stdout)
+		}
+		if log := stub.Log(t); strings.Contains(log, "add ") || strings.Contains(log, "edit ") || strings.Contains(log, "sync") {
+			t.Fatalf("dry-run should not mutate provider, log=%q", log)
+		}
+
+		stdout, stderr, code = runCLI(t, bin, project, stub.Env(), "push")
+		if code != 0 || stderr != "" {
+			t.Fatalf("fields push create failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
+		}
+		if !strings.Contains(stdout, "WRITTEN bitwarden:Jesse (added: 1)") {
+			t.Fatalf("unexpected fields create summary: %s", stdout)
+		}
+		if got := stub.Password(t, itemName); got != "shared-v1" {
+			t.Fatalf("unexpected created password %q", got)
+		}
+		if got := stub.Note(t, itemName); got != "" {
+			t.Fatalf("expected blank notes for fields mode, got %q", got)
+		}
+		if got := strings.Count(stub.Log(t), "add Jesse"); got != 1 {
+			t.Fatalf("expected one add, got %d log=%q", got, stub.Log(t))
+		}
+		if got := strings.Count(stub.Log(t), "sync"); got != 1 {
+			t.Fatalf("expected one sync, got %d log=%q", got, stub.Log(t))
+		}
+
+		stdout, stderr, code = runCLI(t, bin, project, stub.Env(), "push")
+		if code != 0 || stderr != "" {
+			t.Fatalf("fields push unchanged failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
+		}
+		if !strings.Contains(stdout, "UNCHANGED bitwarden:Jesse (unchanged: 1, already up to date)") {
+			t.Fatalf("unexpected fields unchanged summary: %s", stdout)
+		}
+		if got := strings.Count(stub.Log(t), "edit Jesse"); got != 0 {
+			t.Fatalf("unchanged run should not edit, log=%q", stub.Log(t))
+		}
+
+		writeFile(t, filepath.Join(project, ".env"), "DB_PASSWD=shared-v2\nAPP_MODE=repo1\n")
+		stdout, stderr, code = runCLI(t, bin, project, stub.Env(), "push")
+		if code != 0 || stderr != "" {
+			t.Fatalf("fields push update failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
+		}
+		if !strings.Contains(stdout, "WRITTEN bitwarden:Jesse (updated: 1)") {
+			t.Fatalf("unexpected fields update summary: %s", stdout)
+		}
+		if got := stub.Password(t, itemName); got != "shared-v2" {
+			t.Fatalf("expected updated password, got %q", got)
+		}
+		if got := strings.Count(stub.Log(t), "edit Jesse"); got != 1 {
+			t.Fatalf("expected one edit, got %d log=%q", got, stub.Log(t))
+		}
+	})
+
+	t.Run("unsupported fields mode mapping is rejected", func(t *testing.T) {
+		project := setupProject(t,
+			"DB_PASSWD=\n",
+			"DB_PASSWD=shared-v1\n",
+			"item_name: Jesse\nmapping:\n  DB_PASSWD: shared_password\n",
 		)
 		stub := writeRBWStubWithOptions(t, rbwStubOptions{Status: "unlocked"})
 
 		stdout, stderr, code := runCLI(t, bin, project, stub.Env(), "push")
-		if code != 1 || !strings.Contains(stderr, "ERROR E009") {
-			t.Fatalf("expected fields mode error, code=%d stdout=%q stderr=%q", code, stdout, stderr)
+		if code != 1 || !strings.Contains(stderr, "ERROR E011") {
+			t.Fatalf("expected unsupported fields-mode error, code=%d stdout=%q stderr=%q", code, stdout, stderr)
 		}
-		if strings.TrimSpace(stub.Log(t)) != "" {
-			t.Fatalf("expected no provider calls, log=%q", stub.Log(t))
+		if strings.Contains(stub.Log(t), "add ") || strings.Contains(stub.Log(t), "edit ") || strings.Contains(stub.Log(t), "sync") {
+			t.Fatalf("expected no provider mutation, log=%q", stub.Log(t))
 		}
+	})
 
-		writeFile(t, filepath.Join(project, ".envsync.yaml"), configYAML)
-		stdout, stderr, code = runCLI(t, bin, project, stub.Env(), "push", "--dry-run")
+	t.Run("extra previews keep schema unchanged", func(t *testing.T) {
+		project := setupProject(t,
+			"DATABASE_URL=\n",
+			"DATABASE_URL=postgres://vault/dev\nEXTRA_FLAG=true\n",
+			configYAML,
+		)
+		stub := writeRBWStubWithOptions(t, rbwStubOptions{Status: "unlocked"})
+
+		stdout, stderr, code := runCLI(t, bin, project, stub.Env(), "push", "--dry-run")
 		if code != 0 || stderr != "" {
 			t.Fatalf("push extra preview failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
 		}

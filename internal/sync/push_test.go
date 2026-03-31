@@ -3,6 +3,7 @@ package sync
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"dotenv-sync/internal/config"
@@ -45,12 +46,61 @@ func TestPlanPushDocsClassifiesChanges(t *testing.T) {
 	}
 }
 
-func TestPlanPushDocsRejectsFieldsMode(t *testing.T) {
-	cfg := config.Config{StorageMode: config.StorageModeFields}
-	schema := envfile.ParseBytes(".env.example", envfile.KindSchema, []byte("DATABASE_URL=\n"))
-	local := envfile.ParseBytes(".env", envfile.KindLocal, []byte("DATABASE_URL=value\n"))
+func TestPlanPushDocsSupportsFieldsModePasswordMapping(t *testing.T) {
+	cfg := config.Config{
+		ItemName:    "shared-dev",
+		StorageMode: config.StorageModeFields,
+		Mapping: map[string]string{
+			"DB_PASSWD": "password",
+		},
+	}
+	schema := envfile.ParseBytes(".env.example", envfile.KindSchema, []byte("DB_PASSWD=\nAPP_MODE=repo1\n"))
+	local := envfile.ParseBytes(".env", envfile.KindLocal, []byte("DB_PASSWD=rotated\nAPP_MODE=repo1\nEXTRA_FLAG=true\n"))
+	prov := &fakeProvider{
+		payload: provider.EnvPayload{
+			ItemName:    "shared-dev",
+			StorageMode: config.StorageModeFields,
+			Exists:      true,
+			Password:    "old-secret",
+			Notes:       "keep-me",
+		},
+		resolutions: map[string]provider.Resolution{
+			"DB_PASSWD": {Key: "DB_PASSWD", Ref: "password", Source: "provider", Value: "old-secret"},
+		},
+	}
 
-	if _, _, err := PlanPushDocs(context.Background(), cfg, schema, local, &fakeProvider{}); err == nil {
-		t.Fatal("expected fields mode rejection")
+	plan, target, err := PlanPushDocs(context.Background(), cfg, schema, local, prov)
+	if err != nil {
+		t.Fatalf("plan push docs: %v", err)
+	}
+	if !plan.WriteRequired {
+		t.Fatal("expected write required")
+	}
+	if summary := Summarize(plan.Changes); summary.Updated != 1 || summary.Extra != 1 {
+		t.Fatalf("unexpected summary: %+v", summary)
+	}
+	if target.ItemName != "shared-dev" || target.StorageMode != config.StorageModeFields {
+		t.Fatalf("unexpected target metadata: %+v", target)
+	}
+	if target.Notes != "keep-me" || target.Password != "old-secret" {
+		t.Fatalf("expected existing raw item data to be preserved, got %+v", target)
+	}
+	if !NoteJSONEqual(target.Env, map[string]string{"DB_PASSWD": "rotated"}) {
+		t.Fatalf("unexpected fields target env: %+v", target.Env)
+	}
+}
+
+func TestPlanPushDocsRejectsUnsupportedFieldsModeMapping(t *testing.T) {
+	cfg := config.Config{
+		StorageMode: config.StorageModeFields,
+		Mapping: map[string]string{
+			"DB_PASSWD": "shared_password",
+		},
+	}
+	schema := envfile.ParseBytes(".env.example", envfile.KindSchema, []byte("DB_PASSWD=\n"))
+	local := envfile.ParseBytes(".env", envfile.KindLocal, []byte("DB_PASSWD=value\n"))
+
+	if _, _, err := PlanPushDocs(context.Background(), cfg, schema, local, &fakeProvider{}); err == nil || !strings.Contains(err.Error(), "Bitwarden password field") {
+		t.Fatalf("expected unsupported fields-mode mapping error, got %v", err)
 	}
 }

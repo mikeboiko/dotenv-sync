@@ -17,7 +17,9 @@
 
 - `.env` must exist and parse successfully
 - Bitwarden readiness must pass through the existing `rbw` checks
-- Bitwarden `storage_mode` must be `note_json`
+- Bitwarden `storage_mode` must be either:
+  - `note_json`, or
+  - `fields` with pushed keys mapped to Bitwarden's built-in `password` field
 
 ## Behavior
 
@@ -37,8 +39,9 @@
   or `EXTRA`.
 - Per-key lines may include redacted markers such as `[REDACTED]`, but must
   never print raw values.
-- Field-mode repos remain the default elsewhere in the product, so `ds push`
-  must clearly reject them until `storage_mode: note_json` is configured.
+- Field-mode repos may push shared aliases through the Bitwarden `password`
+  field, while unsupported custom-field mappings must fail with actionable
+  guidance.
 - Summary lines use the shared status vocabulary and target the provider item,
   for example:
 
@@ -50,8 +53,9 @@ UNCHANGED bitwarden:Jesse (already up to date)
 
 ## Failure Rules
 
-- If the repo is still on `fields` mode, `ds push` must fail with actionable
-  guidance to enable `note_json`.
+- If the repo stays on `fields` mode but maps pushed keys to custom Bitwarden
+  fields, `ds push` must fail with actionable guidance to use `password` or
+  switch to `note_json`.
 - If `.env` is missing, malformed, or contains duplicate keys, `ds push` must
   fail before any provider mutation.
 - If the provider payload is malformed, `ds push` must fail with a repair action

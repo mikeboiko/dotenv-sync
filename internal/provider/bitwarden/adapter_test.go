@@ -131,6 +131,103 @@ func TestAdapterLoadEnvPayloadRejectsMalformedNotes(t *testing.T) {
 	}
 }
 
+func TestAdapterLoadEnvPayloadSupportsFieldsMode(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "rbw")
+	script := "#!/bin/sh\n" +
+		"if [ \"$1\" = \"get\" ] && [ \"$2\" = \"--raw\" ] && [ \"$3\" = \"shared-dev\" ]; then\n" +
+		"  printf '%s\\n' '{\"name\":\"shared-dev\",\"notes\":\"keep-me\",\"data\":{\"password\":\"shared-secret\"}}'\n" +
+		"  exit 0\n" +
+		"fi\n" +
+		"echo 'not found' >&2\n" +
+		"exit 1\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	adapter := &Adapter{
+		client: &RBWClient{Bin: bin},
+		cfg:    config.Config{ItemName: "shared-dev", StorageMode: config.StorageModeFields},
+		cache:  map[string]provider.Resolution{},
+	}
+
+	payload, err := adapter.LoadEnvPayload(context.Background())
+	if err != nil {
+		t.Fatalf("load fields payload: %v", err)
+	}
+	if !payload.Exists || payload.Password != "shared-secret" || payload.Notes != "keep-me" {
+		t.Fatalf("unexpected fields payload: %+v", payload)
+	}
+}
+
+func TestAdapterStoreEnvPayloadSupportsFieldsModePasswordWrites(t *testing.T) {
+	dir := t.TempDir()
+	bin := filepath.Join(dir, "rbw")
+	logPath := filepath.Join(dir, "rbw.log")
+	editCapture := filepath.Join(dir, "edit.txt")
+	script := "#!/bin/sh\n" +
+		"echo \"$@\" >> '" + logPath + "'\n" +
+		"tmp=$(mktemp)\n" +
+		"case \"$1\" in\n" +
+		"edit)\n" +
+		"  \"${VISUAL:-$EDITOR}\" \"$tmp\"\n" +
+		"  cat \"$tmp\" > '" + editCapture + "'\n" +
+		"  ;;\n" +
+		"sync) exit 0 ;;\n" +
+		"*) echo 'unsupported' >&2; exit 1 ;;\n" +
+		"esac\n"
+	if err := os.WriteFile(bin, []byte(script), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	ptyWrapper := filepath.Join(dir, "script")
+	ptyWrapperContent := "#!/bin/sh\n" +
+		"exec /bin/sh -c \"$3\"\n"
+	if err := os.WriteFile(ptyWrapper, []byte(ptyWrapperContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", dir+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	adapter := &Adapter{
+		client: &RBWClient{Bin: bin},
+		cfg: config.Config{
+			ItemName:    "shared-dev",
+			StorageMode: config.StorageModeFields,
+			Mapping: map[string]string{
+				"DB_PASSWD": "password",
+			},
+		},
+		cache: map[string]provider.Resolution{},
+	}
+
+	_, err := adapter.StoreEnvPayload(context.Background(), provider.EnvPayload{
+		ItemName:    "shared-dev",
+		StorageMode: config.StorageModeFields,
+		Exists:      true,
+		Notes:       "keep-me",
+		Password:    "old-secret",
+		Env: map[string]string{
+			"DB_PASSWD": "rotated-secret",
+		},
+	})
+	if err != nil {
+		t.Fatalf("store fields payload: %v", err)
+	}
+	editData, err := os.ReadFile(editCapture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(editData) != "rotated-secret\n\nkeep-me\n" {
+		t.Fatalf("unexpected editor content: %q", string(editData))
+	}
+	logData, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(logData), "edit shared-dev") || !strings.Contains(string(logData), "sync") {
+		t.Fatalf("unexpected rbw log: %s", logData)
+	}
+}
+
 func TestAdapterResolveTreatsNoEntryFoundAsMissing(t *testing.T) {
 	dir := t.TempDir()
 	bin := filepath.Join(dir, "rbw")

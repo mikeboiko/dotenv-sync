@@ -142,8 +142,27 @@ metadata is unavailable. By default, provider-managed keys resolve as
 name inside that Bitwarden item.
 
 `storage_mode` defaults to `fields` for backward-compatible reads from the
-repo-scoped Bitwarden item fields. Set `storage_mode: note_json` to opt a
-repository into note-backed JSON storage and enable `ds push`.
+repo-scoped Bitwarden item fields. In `fields` mode, `ds push` can update
+provider-managed keys that map to Bitwarden's built-in `password` field. Set
+`storage_mode: note_json` to store the full repo env map in the item notes for
+round-trip `push`/`sync` workflows.
+
+That makes shared aliases across repos possible with the default field-based
+layout. For example, both repos below read and write the same Bitwarden value:
+
+```yaml
+# repo1/.envsync.yaml
+item_name: shared-dev
+mapping:
+  DB_PASSWD: password
+```
+
+```yaml
+# repo2/.envsync.yaml
+item_name: shared-dev
+mapping:
+  PSWD: password
+```
 
 ## Commands
 
@@ -169,12 +188,17 @@ ds push
 
 - Requires `storage_mode: note_json`
 - Reads `.env` as the upload source and `.env.example` as schema context
-- Writes a deterministic JSON payload into the repo-scoped Bitwarden item notes
+- In `note_json`, writes a deterministic JSON payload into the repo-scoped
+  Bitwarden item notes
+- In `fields`, updates provider-managed keys present in `.env` when they map to
+  Bitwarden's built-in `password` field
 - Never prints raw values; previews use redacted markers such as `[REDACTED]`
 - Leaves `.env` and `.env.example` untouched
 
-If the repository still uses the default field-based layout, `ds push` fails
-with actionable guidance instead of creating a second provider representation.
+Field mode is useful for shared aliases across repos, but `rbw` cannot script
+writes to arbitrary custom Bitwarden fields. If a repo maps pushed keys to
+custom fields, `ds push` fails with actionable guidance to use `password` or
+switch to `storage_mode: note_json`.
 
 ### `ds diff`
 

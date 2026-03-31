@@ -5,8 +5,8 @@
 - **Provider**: Bitwarden via the `rbw` CLI
 - **Item shape**: One repo-scoped Bitwarden login entry per repository
 - **Readable modes**:
-  - `fields` (existing default, read-only for `ds push`)
-  - `note_json` (new write-capable mode)
+  - `fields` (existing default, write-capable only for `password`-field aliases)
+  - `note_json` (write-capable full-env mode)
 
 ## `note_json` Payload Format
 
@@ -39,6 +39,16 @@ The repo-scoped Bitwarden item notes must store a deterministic JSON envelope:
   - one `rbw add` or `rbw edit` mutation when required
   - one final `rbw sync`
 
+## `fields` Push Rules
+
+- `ds push` may update field-mode repos only when each pushed schema key maps to
+  Bitwarden's built-in `password` field.
+- Field-mode push uploads only provider-managed keys currently present in `.env`.
+- Multiple env keys may point at the shared `password` field only when their
+  local values are identical.
+- Custom Bitwarden field mappings remain readable through `ds sync`, but they
+  are not writable through `rbw` and must fail with actionable guidance.
+
 ## Mutation Rules
 
 - If the repo item is missing, the adapter creates it.
@@ -60,5 +70,5 @@ The repo-scoped Bitwarden item notes must store a deterministic JSON envelope:
 - Malformed JSON, unsupported `format` values, or incompatible item content must
   produce actionable provider errors.
 - Provider errors must never include raw secret values.
-- Existing `fields` mode must be treated as incompatible with `ds push`, not as
-  an implicit migration target.
+- Existing `fields` mode remains readable, but unsupported field-mode writes
+  must fail instead of partially mutating the repo item.

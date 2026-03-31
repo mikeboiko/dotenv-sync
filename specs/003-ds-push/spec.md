@@ -65,31 +65,35 @@ stub, remove `.env`, and verify `ds sync` reconstructs it while `ds diff`,
 
 ---
 
-### User Story 3 - Adopt push mode without breaking existing repos (Priority: P3)
+### User Story 3 - Use shared field aliases without breaking existing repos (Priority: P3)
 
-As a maintainer, I want `ds push` to guide me when a repository is still using
-the existing field-based Bitwarden layout so I can adopt provider write-back
-deliberately instead of silently breaking current read behavior.
+As a maintainer, I want `ds push` to support the existing field-based Bitwarden
+layout when a repository uses shared password-field aliases so I can reuse one
+Bitwarden value across repos without silently breaking current read behavior.
 
 **Why this priority**: The repository already ships with a field-based default,
-so adding write-back must not surprise existing users.
+so adding write-back should support the shared-alias workflow while still
+failing safely for unsupported custom-field writes.
 
-**Independent Test**: Run `ds push` in a repo that still uses the default
-field-based storage mode and in a repo whose `.env` contains keys outside the
-schema, then verify the CLI explains the mode mismatch and surfaces schema
-extras without mutating `.env.example`.
+**Independent Test**: Run `ds push` in a repo that uses the default field-based
+storage mode with `mapping: password`, then run it in a repo whose mapping
+targets a custom field and whose `.env` contains keys outside the schema; verify
+the shared alias writes succeed, unsupported mappings fail with guidance, and
+schema extras are surfaced without mutating `.env.example`.
 
 **Acceptance Scenarios**:
 
 1. **Given** the repository still uses the default Bitwarden `fields` storage
-   mode, **When** the user runs `ds push`, **Then** the CLI exits with an
-   actionable error explaining that `rbw` write-back requires `note_json` mode.
+   mode and its pushed keys map to Bitwarden's built-in `password` field,
+   **When** the user runs `ds push`, **Then** the CLI updates that shared field
+   without requiring `note_json`.
 2. **Given** `.env` contains keys that are not present in `.env.example`,
    **When** the user runs `ds push --dry-run`, **Then** those keys are surfaced
    as `extra` entries in the preview, but `.env.example` is not modified.
-3. **Given** the repository opts into `note_json` mode, **When** the user reads
-   the documentation and quickstart, **Then** they can configure the mode,
-   upload the current `.env`, and later rebuild it from Bitwarden.
+3. **Given** the repository stays on `fields` mode but maps pushed keys to
+   custom Bitwarden fields, **When** the user runs `ds push`, **Then** the CLI
+   fails with actionable guidance to use the `password` field or switch to
+   `note_json`.
 
 ### Edge Cases
 
@@ -147,6 +151,12 @@ extras without mutating `.env.example`.
   future Bitwarden write strategies can implement the same push contract.
 - **FR-012**: README, quickstart, and command help MUST document how to opt into
   `note_json` mode and how to use `ds push` safely.
+- **FR-013**: In `fields` mode, `ds push` MUST support updating
+  provider-managed keys currently present in `.env` when they map to
+  Bitwarden's built-in `password` field.
+- **FR-014**: In `fields` mode, `ds push` MUST fail with actionable diagnostics
+  when pushed keys map to unsupported custom Bitwarden fields or collapse
+  conflicting local values into one shared field.
 
 ### Key Entities _(include if feature involves data)_
 

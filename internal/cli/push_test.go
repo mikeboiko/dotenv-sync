@@ -87,10 +87,52 @@ func TestPushCommandDryRunPrintsRedactedPreview(t *testing.T) {
 	}
 }
 
-func TestPushCommandRejectsFieldsMode(t *testing.T) {
+func TestPushCommandSupportsFieldsModePasswordMapping(t *testing.T) {
 	project := t.TempDir()
-	writeFileForCommandTest(t, filepath.Join(project, ".env.example"), "DATABASE_URL=\n")
-	writeFileForCommandTest(t, filepath.Join(project, ".env"), "DATABASE_URL=value\n")
+	writeFileForCommandTest(t, filepath.Join(project, ".env.example"), "DB_PASSWD=\nAPP_MODE=repo1\n")
+	writeFileForCommandTest(t, filepath.Join(project, ".env"), "DB_PASSWD=shared-secret\nAPP_MODE=repo1\n")
+	writeFileForCommandTest(t, filepath.Join(project, ".envsync.yaml"), "item_name: Jesse\nmapping:\n  DB_PASSWD: password\n")
+
+	fake := &fakePushProvider{payload: provider.EnvPayload{ItemName: "Jesse", StorageMode: config.StorageModeFields, Exists: false, Env: map[string]string{}}}
+	restore := swapPushProviderFactory(func(config.Config) provider.PushProvider { return fake })
+	defer restore()
+
+	cwd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(cwd)
+	if err := os.Chdir(project); err != nil {
+		t.Fatal(err)
+	}
+
+	var stdout, stderr bytes.Buffer
+	cmd := newPushCommand(streams{stdout: &stdout, stderr: &stderr}, &rootOptions{})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("expected fields mode push to succeed, got %v", err)
+	}
+	if fake.storeCount != 1 {
+		t.Fatalf("expected one provider write, got %d", fake.storeCount)
+	}
+	if !strings.Contains(stdout.String(), "WRITTEN bitwarden:Jesse (added: 1)") {
+		t.Fatalf("unexpected stdout: %s", stdout.String())
+	}
+	if fake.stored.Env["DB_PASSWD"] != "shared-secret" {
+		t.Fatalf("unexpected stored payload: %+v", fake.stored)
+	}
+	if fake.stored.StorageMode != config.StorageModeFields {
+		t.Fatalf("expected fields payload, got %+v", fake.stored)
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("unexpected stderr: %q", stderr.String())
+	}
+}
+
+func TestPushCommandRejectsUnsupportedFieldsModeMapping(t *testing.T) {
+	project := t.TempDir()
+	writeFileForCommandTest(t, filepath.Join(project, ".env.example"), "DB_PASSWD=\n")
+	writeFileForCommandTest(t, filepath.Join(project, ".env"), "DB_PASSWD=value\n")
+	writeFileForCommandTest(t, filepath.Join(project, ".envsync.yaml"), "item_name: Jesse\nmapping:\n  DB_PASSWD: shared_password\n")
 
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -102,8 +144,8 @@ func TestPushCommandRejectsFieldsMode(t *testing.T) {
 	}
 
 	cmd := newPushCommand(streams{stdout: &bytes.Buffer{}, stderr: &bytes.Buffer{}}, &rootOptions{})
-	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "storage_mode: note_json") {
-		t.Fatalf("expected fields mode error, got %v", err)
+	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "Bitwarden password field") {
+		t.Fatalf("expected unsupported fields-mode mapping error, got %v", err)
 	}
 }
 

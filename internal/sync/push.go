@@ -12,6 +12,8 @@ import (
 	"dotenv-sync/internal/report"
 )
 
+const pushWritableFieldPassword = "password"
+
 func PlanPush(ctx context.Context, cfg config.Config, prov provider.PushProvider) (Plan, provider.EnvPayload, error) {
 	schema, err := envfile.ParseFile(cfg.SchemaFile, envfile.KindSchema)
 	if err != nil {
@@ -29,13 +31,20 @@ func PlanPush(ctx context.Context, cfg config.Config, prov provider.PushProvider
 
 func PlanPushDocs(ctx context.Context, cfg config.Config, schema, local envfile.Document, prov provider.PushProvider) (Plan, provider.EnvPayload, error) {
 	plan := Plan{Mode: "push", Schema: schema, LocalEnv: local, Config: cfg}
-	if !cfg.UsesNoteJSON() {
-		return plan, provider.EnvPayload{}, report.NewAppError("E009", report.ExitOperational, "ds push requires storage_mode: note_json", "push cannot safely write into field-based Bitwarden items", "set storage_mode: note_json in .envsync.yaml, migrate the repo item, and retry", nil)
-	}
 	plan.Issues = append(plan.Issues, collectDocumentIssues(schema)...)
 	plan.Issues = append(plan.Issues, collectDocumentIssues(local)...)
 	if len(plan.Issues) > 0 {
 		return plan, provider.EnvPayload{}, issueAsAppError(plan.Issues[0], "push cannot upload the current .env")
+	}
+	localEnv := CanonicalDocumentEnv(local)
+	fieldRefs := map[string]string{}
+	fieldTargetEnv := map[string]string{}
+	if !cfg.UsesNoteJSON() {
+		var err error
+		fieldRefs, fieldTargetEnv, err = buildFieldsPushTarget(cfg, schema, local)
+		if err != nil {
+			return plan, provider.EnvPayload{}, err
+		}
 	}
 	status, err := prov.CheckReadiness(ctx)
 	if err != nil {
@@ -49,15 +58,36 @@ func PlanPushDocs(ctx context.Context, cfg config.Config, schema, local envfile.
 	if err != nil {
 		return plan, provider.EnvPayload{}, err
 	}
+	if !cfg.UsesNoteJSON() {
+		currentEnv, err := loadFieldsPushCurrentEnv(ctx, prov, fieldRefs)
+		if err != nil {
+			return plan, provider.EnvPayload{}, err
+		}
+		current.Env = currentEnv
+		target := provider.EnvPayload{
+			ItemName:    current.ItemName,
+			StorageMode: cfg.StorageMode,
+			Exists:      current.Exists,
+			Notes:       current.Notes,
+			Password:    current.Password,
+			Env:         fieldTargetEnv,
+		}
+		if target.ItemName == "" {
+			target.ItemName = cfg.ItemName
+		}
+		plan.Changes = buildPushChanges(schema.AssignmentMap(), localEnv, target.Env, current.Env)
+		plan.WriteRequired = !NoteJSONEqual(target.Env, current.Env)
+		return plan, target, nil
+	}
 	target := provider.EnvPayload{
 		ItemName:    cfg.ItemName,
 		StorageMode: cfg.StorageMode,
 		Exists:      current.Exists,
 		Format:      NoteJSONFormat,
 		Password:    current.Password,
-		Env:         CanonicalDocumentEnv(local),
+		Env:         localEnv,
 	}
-	plan.Changes = buildPushChanges(schema.AssignmentMap(), target.Env, current.Env)
+	plan.Changes = buildPushChanges(schema.AssignmentMap(), localEnv, target.Env, current.Env)
 	plan.WriteRequired = !NoteJSONEqual(target.Env, current.Env) || !current.Exists
 	if !current.Exists && len(target.Env) == 0 {
 		plan.WriteRequired = false
@@ -65,21 +95,29 @@ func PlanPushDocs(ctx context.Context, cfg config.Config, schema, local envfile.
 	return plan, target, nil
 }
 
-func buildPushChanges(schemaKeys map[string]envfile.EnvironmentLine, localEnv, providerEnv map[string]string) []ChangeRecord {
-	keys := unionKeys(localEnv, providerEnv)
+func buildPushChanges(schemaKeys map[string]envfile.EnvironmentLine, localEnv, targetEnv, providerEnv map[string]string) []ChangeRecord {
+	keys := unionKeys(targetEnv, providerEnv)
 	changes := make([]ChangeRecord, 0, len(keys))
+	seen := make(map[string]struct{}, len(keys))
 	for _, key := range keys {
-		localValue, hasLocal := localEnv[key]
+		seen[key] = struct{}{}
+		localValue, hasLocal := targetEnv[key]
 		providerValue, hasProvider := providerEnv[key]
-		if _, inSchema := schemaKeys[key]; hasLocal && !inSchema {
-			changes = append(changes, ChangeRecord{
-				Key:        key,
-				ChangeType: "extra",
-				Before:     report.RedactValue(providerValue),
-				After:      report.RedactValue(localValue),
-				File:       "provider",
-				Message:    "present in .env but not in .env.example",
-			})
+		if _, inSchema := schemaKeys[key]; !inSchema {
+			localValue, hasLocal := localEnv[key]
+			switch {
+			case hasLocal:
+				changes = append(changes, ChangeRecord{
+					Key:        key,
+					ChangeType: "extra",
+					Before:     report.RedactValue(providerValue),
+					After:      report.RedactValue(localValue),
+					File:       "provider",
+					Message:    "present in .env but not in .env.example",
+				})
+			case hasProvider:
+				changes = append(changes, ChangeRecord{Key: key, ChangeType: "update", File: "provider", Before: report.RedactValue(providerValue), After: report.RedactValue(""), Message: "will be removed from Bitwarden"})
+			}
 			continue
 		}
 		switch {
@@ -92,6 +130,21 @@ func buildPushChanges(schemaKeys map[string]envfile.EnvironmentLine, localEnv, p
 		default:
 			changes = append(changes, ChangeRecord{Key: key, ChangeType: "unchanged", File: "provider", After: report.RedactValue(localValue), Message: "already current"})
 		}
+	}
+	for _, key := range report.SortedKeys(localEnv) {
+		if _, inSchema := schemaKeys[key]; inSchema {
+			continue
+		}
+		if _, ok := seen[key]; ok {
+			continue
+		}
+		changes = append(changes, ChangeRecord{
+			Key:        key,
+			ChangeType: "extra",
+			After:      report.RedactValue(localEnv[key]),
+			File:       "provider",
+			Message:    "present in .env but not in .env.example",
+		})
 	}
 	return changes
 }
@@ -124,4 +177,59 @@ func PreserveAppError(err error, fallback func(error) error) error {
 		return err
 	}
 	return fallback(err)
+}
+
+func buildFieldsPushTarget(cfg config.Config, schema, local envfile.Document) (map[string]string, map[string]string, error) {
+	localAssignments := local.AssignmentMap()
+	refs := map[string]string{}
+	targetEnv := map[string]string{}
+	fieldValues := map[string]string{}
+	for _, line := range schema.Lines {
+		if line.LineType != envfile.LineAssignment || !line.ManagedByProvider {
+			continue
+		}
+		localLine, ok := localAssignments[line.Key]
+		if !ok || localLine.Value == "" {
+			continue
+		}
+		ref := cfg.ProviderRef(line.Key)
+		if ref != pushWritableFieldPassword {
+			return nil, nil, report.NewAppError("E011", report.ExitOperational, "fields-mode push only supports mappings to the Bitwarden password field", "push cannot safely update custom Bitwarden fields through rbw", "map pushed keys to password, or switch to storage_mode: note_json and retry", nil)
+		}
+		if current, ok := fieldValues[ref]; ok && current != localLine.Value {
+			return nil, nil, report.NewAppError("E011", report.ExitOperational, "multiple env keys map to the Bitwarden password field with different values", "push cannot safely collapse conflicting local values into one Bitwarden field", "use one value per shared password field, or switch to storage_mode: note_json and retry", nil)
+		}
+		fieldValues[ref] = localLine.Value
+		refs[line.Key] = ref
+		targetEnv[line.Key] = localLine.Value
+	}
+	return refs, targetEnv, nil
+}
+
+func loadFieldsPushCurrentEnv(ctx context.Context, prov provider.Provider, refs map[string]string) (map[string]string, error) {
+	if len(refs) == 0 {
+		return map[string]string{}, nil
+	}
+	results, err := prov.ResolveMany(ctx, refs)
+	if err != nil {
+		return nil, PreserveAppError(err, func(err error) error {
+			return report.NewAppError("E003", report.ExitOperational, "provider field could not be loaded", "push cannot read the repo-scoped Bitwarden item", "check rbw and retry", err)
+		})
+	}
+	currentEnv := map[string]string{}
+	for key, res := range results {
+		switch res.Source {
+		case "provider":
+			currentEnv[key] = res.Value
+		case "missing":
+			continue
+		default:
+			problem := "provider field could not be loaded"
+			if key != "" {
+				problem = fmt.Sprintf("provider field could not be loaded: %s", key)
+			}
+			return nil, report.NewAppError("E003", report.ExitOperational, problem, "push cannot read the repo-scoped Bitwarden item", "check rbw and retry", nil)
+		}
+	}
+	return currentEnv, nil
 }

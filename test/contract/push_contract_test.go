@@ -90,27 +90,63 @@ func TestContractPush(t *testing.T) {
 		}
 	})
 
-	t.Run("fields mode explains migration path", func(t *testing.T) {
+	t.Run("fields mode password mapping writes the shared password field", func(t *testing.T) {
 		project := setupProject(t,
-			"DATABASE_URL=\n",
-			"DATABASE_URL=postgres://vault/dev\n",
-			"item_name: Jesse\n",
+			"DB_PASSWD=\nAPP_MODE=repo1\n",
+			"DB_PASSWD=shared-v1\nAPP_MODE=repo1\n",
+			"item_name: Jesse\nmapping:\n  DB_PASSWD: password\n",
+		)
+		stub := writeRBWStubWithOptions(t, rbwStubOptions{Status: "unlocked"})
+
+		stdout, stderr, code := runCLI(t, bin, project, stub.Env(), "push", "--dry-run")
+		if code != 0 || stderr != "" {
+			t.Fatalf("push fields dry-run failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
+		}
+		for _, want := range []string{"ADD DB_PASSWD [REDACTED]", "CHECKED bitwarden:Jesse (added: 1, dry-run)"} {
+			if !strings.Contains(stdout, want) {
+				t.Fatalf("push fields dry-run missing %q\n%s", want, stdout)
+			}
+		}
+		if log := stub.Log(t); strings.Contains(log, "add ") || strings.Contains(log, "edit ") || strings.Contains(log, "sync") {
+			t.Fatalf("dry-run should not mutate provider, log=%q", log)
+		}
+
+		stdout, stderr, code = runCLI(t, bin, project, stub.Env(), "push")
+		if code != 0 || stderr != "" {
+			t.Fatalf("push fields write failed: code=%d stderr=%q stdout=%q", code, stderr, stdout)
+		}
+		if !strings.Contains(stdout, "WRITTEN bitwarden:Jesse (added: 1)") {
+			t.Fatalf("unexpected fields push summary: %s", stdout)
+		}
+		if got := stub.Password(t, itemName); got != "shared-v1" {
+			t.Fatalf("expected shared password to be written, got %q", got)
+		}
+		if got := stub.Note(t, itemName); got != "" {
+			t.Fatalf("expected blank notes in fields mode, got %q", got)
+		}
+	})
+
+	t.Run("unsupported fields mode mapping explains the safe fallback", func(t *testing.T) {
+		project := setupProject(t,
+			"DB_PASSWD=\n",
+			"DB_PASSWD=shared-v1\n",
+			"item_name: Jesse\nmapping:\n  DB_PASSWD: shared_password\n",
 		)
 		stub := writeRBWStubWithOptions(t, rbwStubOptions{Status: "unlocked"})
 
 		stdout, stderr, code := runCLI(t, bin, project, stub.Env(), "push")
 		if code != 1 {
-			t.Fatalf("push fields mode exit code=%d stdout=%q stderr=%q", code, stdout, stderr)
+			t.Fatalf("push unsupported fields mode exit code=%d stdout=%q stderr=%q", code, stdout, stderr)
 		}
 		want := readRepoFile(t, "test", "testdata", "golden", "push-fields-mode-error.txt")
 		if stderr != want {
-			t.Fatalf("push fields stderr = %q want %q", stderr, want)
+			t.Fatalf("push unsupported fields stderr = %q want %q", stderr, want)
 		}
 		if stdout != "" {
 			t.Fatalf("expected empty stdout, got %q", stdout)
 		}
-		if strings.TrimSpace(stub.Log(t)) != "" {
-			t.Fatalf("expected no provider calls in fields mode, log=%q", stub.Log(t))
+		if strings.Contains(stub.Log(t), "add ") || strings.Contains(stub.Log(t), "edit ") || strings.Contains(stub.Log(t), "sync") {
+			t.Fatalf("expected no provider mutation in unsupported fields mode, log=%q", stub.Log(t))
 		}
 	})
 

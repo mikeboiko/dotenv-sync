@@ -102,6 +102,16 @@ func (c Config) UsesNoteJSON() bool {
 	return normalizeStorageMode(c.StorageMode) == StorageModeNoteJSON
 }
 
+func (c Config) ProviderRef(key string) string {
+	if c.UsesNoteJSON() {
+		return key
+	}
+	if ref := strings.TrimSpace(c.Mapping[key]); ref != "" {
+		return ref
+	}
+	return key
+}
+
 func resolvePath(baseDir, value string) string {
 	if value == "" {
 		return value

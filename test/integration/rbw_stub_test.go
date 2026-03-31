@@ -152,6 +152,10 @@ func writeRBWStubWithOptions(t *testing.T, opts rbwStubOptions) rbwStub {
 	script.WriteString("    *) item=\"$1\"; shift ;;\n")
 	script.WriteString("  esac\n")
 	script.WriteString("done\n")
+	script.WriteString("if [ \"$field\" = \"password\" ] && [ -f \"$(item_file \"$item\" password)\" ]; then\n")
+	script.WriteString("  cat \"$(item_file \"$item\" password)\"\n")
+	script.WriteString("  exit 0\n")
+	script.WriteString("fi\n")
 	script.WriteString("case \"$item::$field\" in\n")
 	for key, value := range opts.Fields {
 		script.WriteString(fmt.Sprintf("%s) printf '%%s\\n' '%s' ;;\n", key, value))

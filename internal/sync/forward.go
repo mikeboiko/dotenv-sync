@@ -53,14 +53,7 @@ func PlanForwardDocs(ctx context.Context, cfg config.Config, schema, local envfi
 			resolutions[line.Key] = provider.Resolution{Key: line.Key, Ref: line.Key, Value: line.Value, Source: "static"}
 			continue
 		}
-		fieldName := line.Key
-		if !cfg.UsesNoteJSON() {
-			fieldName = cfg.Mapping[line.Key]
-			if fieldName == "" {
-				fieldName = line.Key
-			}
-		}
-		refs[line.Key] = fieldName
+		refs[line.Key] = cfg.ProviderRef(line.Key)
 	}
 	providerResults, err := prov.ResolveMany(ctx, refs)
 	if err != nil {
