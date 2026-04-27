@@ -11,14 +11,20 @@ func TestContractAurPublishWorkflow(t *testing.T) {
 	for _, want := range []string{
 		"release:",
 		"published",
-		"ref: ${{ github.event.release.tag_name }}",
+		"workflow_dispatch:",
+		"release_tag:",
+		"pkgrel:",
+		"fetch-depth: 0",
 		"AUR_SSH_PRIVATE_KEY",
 		"gh release download",
+		"git show \"${{ steps.meta.outputs.version }}:LICENSE\"",
+		"git show \"${{ steps.meta.outputs.version }}:README.md\"",
+		"--pkgrel",
 		"--license-sha256",
 		"--readme-sha256",
 		"go run ./scripts/aurpkg",
 		"ssh://aur@aur.archlinux.org/dotenv-sync-bin.git",
-		"upgpkg: dotenv-sync-bin",
+		"upgpkg: dotenv-sync-bin ${PKGVER}-${PKGREL}",
 	} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("workflow missing %q", want)
@@ -26,7 +32,6 @@ func TestContractAurPublishWorkflow(t *testing.T) {
 	}
 
 	for _, unwanted := range []string{
-		"workflow_dispatch:",
 		"main",
 	} {
 		if strings.Contains(content, unwanted) {

@@ -4,12 +4,23 @@ on:
   release:
     types:
       - published
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Stable semver tag to publish to AUR, for example v0.0.6
+        required: true
+        type: string
+      pkgrel:
+        description: Arch package release number for packaging-only updates
+        required: false
+        default: '1'
+        type: string
 
 permissions:
   contents: read
 
 concurrency:
-  group: aur-publish-${{ github.event.release.tag_name }}
+  group: aur-publish-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.event.release.tag_name }}-${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pkgrel || '1' }}
   cancel-in-progress: false
 
 jobs:
@@ -19,32 +30,37 @@ jobs:
     timeout-minutes: 15
 
     steps:
+      - name: Resolve release metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.release_tag || github.event.release.tag_name }}"
+          PKGREL="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.pkgrel || '1' }}"
+          if ! [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::AUR publish requires a stable semver tag like v1.2.3, got ${VERSION}"
+            exit 1
+          fi
+          if ! [[ "${PKGREL}" =~ ^[1-9][0-9]*$ ]]; then
+            echo "::error::AUR publish requires pkgrel >= 1, got ${PKGREL}"
+            exit 1
+          fi
+          echo "publish=true" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "pkgver=${VERSION#v}" >> "${GITHUB_OUTPUT}"
+          echo "pkgrel=${PKGREL}" >> "${GITHUB_OUTPUT}"
+          echo "amd64_asset=ds_${VERSION}_linux_amd64.tar.gz" >> "${GITHUB_OUTPUT}"
+          echo "arm64_asset=ds_${VERSION}_linux_arm64.tar.gz" >> "${GITHUB_OUTPUT}"
+
       - name: Check out repository
         uses: actions/checkout@v6
         with:
-          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
-
-      - name: Validate release metadata
-        id: meta
-        run: |
-          set -euo pipefail
-          VERSION="${{ github.event.release.tag_name }}"
-          if ! [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "publish=false" >> "${GITHUB_OUTPUT}"
-            echo "Skipping AUR publish for non-stable release tag ${VERSION}"
-            exit 0
-          fi
-          echo "publish=true" >> "${GITHUB_OUTPUT}"
-          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "pkgver=${VERSION#v}" >> "${GITHUB_OUTPUT}"
-          echo "amd64_asset=ds_${VERSION}_linux_amd64.tar.gz" >> "${GITHUB_OUTPUT}"
-          echo "arm64_asset=ds_${VERSION}_linux_arm64.tar.gz" >> "${GITHUB_OUTPUT}"
 
       - name: Check AUR credentials
         if: steps.meta.outputs.publish == 'true'
@@ -77,8 +93,8 @@ jobs:
         id: sums
         run: |
           set -euo pipefail
-          license="$(sha256sum LICENSE | awk '{print $1}')"
-          readme="$(sha256sum README.md | awk '{print $1}')"
+          license="$(git show "${{ steps.meta.outputs.version }}:LICENSE" | sha256sum | awk '{print $1}')"
+          readme="$(git show "${{ steps.meta.outputs.version }}:README.md" | sha256sum | awk '{print $1}')"
           amd64="$(sha256sum "dist/${{ steps.meta.outputs.amd64_asset }}" | awk '{print $1}')"
           arm64="$(sha256sum "dist/${{ steps.meta.outputs.arm64_asset }}" | awk '{print $1}')"
           echo "license=${license}" >> "${GITHUB_OUTPUT}"
@@ -111,6 +127,7 @@ jobs:
           set -euo pipefail
           go run ./scripts/aurpkg \
             --version "${{ steps.meta.outputs.version }}" \
+            --pkgrel "${{ steps.meta.outputs.pkgrel }}" \
             --license-sha256 "${{ steps.sums.outputs.license }}" \
             --readme-sha256 "${{ steps.sums.outputs.readme }}" \
             --x86_64-sha256 "${{ steps.sums.outputs.amd64 }}" \
@@ -121,6 +138,7 @@ jobs:
         if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
         env:
           PKGVER: ${{ steps.meta.outputs.pkgver }}
+          PKGREL: ${{ steps.meta.outputs.pkgrel }}
         run: |
           set -euo pipefail
           cd aur-repo
@@ -129,5 +147,5 @@ jobs:
             echo "AUR package is already up to date."
             exit 0
           fi
-          git commit -m "upgpkg: dotenv-sync-bin ${PKGVER}-1"
+          git commit -m "upgpkg: dotenv-sync-bin ${PKGVER}-${PKGREL}"
           git push origin HEAD

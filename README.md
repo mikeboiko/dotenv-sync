@@ -375,6 +375,9 @@ If you need an AUR-only packaging fix without a new upstream release tag, rerun
 `go run ./scripts/aurpkg` against the existing tag with a higher `--pkgrel`
 value and push the updated AUR repo.
 
+You can also run **Publish AUR package** manually from GitHub Actions with a
+`release_tag` such as `v0.0.6` and a `pkgrel` such as `2`.
+
 To enable AUR publishing from GitHub Actions:
 
 1. Add an SSH key to your AUR account.
