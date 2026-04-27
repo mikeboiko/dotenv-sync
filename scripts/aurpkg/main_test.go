@@ -46,6 +46,37 @@ func TestRunWritesAurPackageFiles(t *testing.T) {
 	}
 }
 
+func TestRunSupportsPkgRelOverrides(t *testing.T) {
+	outputDir := t.TempDir()
+	var stdout, stderr bytes.Buffer
+	code := run([]string{
+		"--version", "v1.2.3",
+		"--pkgrel", "2",
+		"--license-sha256", strings.Repeat("c", 64),
+		"--readme-sha256", strings.Repeat("d", 64),
+		"--x86_64-sha256", strings.Repeat("a", 64),
+		"--aarch64-sha256", strings.Repeat("b", 64),
+		"--output-dir", outputDir,
+	}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("run exit code = %d stderr=%q", code, stderr.String())
+	}
+	gotPKGBUILD, err := os.ReadFile(filepath.Join(outputDir, "PKGBUILD"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(gotPKGBUILD), "pkgrel=2") {
+		t.Fatalf("PKGBUILD missing pkgrel override:\n%s", gotPKGBUILD)
+	}
+	gotSRCINFO, err := os.ReadFile(filepath.Join(outputDir, ".SRCINFO"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(gotSRCINFO), "\tpkgrel = 2\n") {
+		t.Fatalf(".SRCINFO missing pkgrel override:\n%s", gotSRCINFO)
+	}
+}
+
 func TestRunRejectsPositionalArgs(t *testing.T) {
 	var stdout, stderr bytes.Buffer
 	code := run([]string{
