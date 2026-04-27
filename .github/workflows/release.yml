@@ -1,20 +1,20 @@
-name: Automatic Patch Release
+name: Release
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - 'v*.*.*'
 
 permissions:
   contents: write
 
 concurrency:
-  group: release-${{ github.workflow }}-${{ github.ref_name }}
+  group: release-${{ github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   release:
-    name: Build and publish patch release
+    name: Build and publish release
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -30,60 +30,22 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Fetch tags
-        run: git fetch --force --tags origin
-
-      - name: Compute release status
+      - name: Validate release tag
         id: version
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          workdir="$(mktemp -d)"
-          trap 'rm -rf "${workdir}"' EXIT
-
-          set +e
-          preview="$(go run ./scripts/nextversion 2>"${workdir}/nextversion.stderr")"
-          status=$?
-          set -e
-
-          if [ "${status}" -eq 0 ]; then
-            printf 'release_required=true\n' >> "${GITHUB_OUTPUT}"
-            printf 'version=%s\n' "${preview}" >> "${GITHUB_OUTPUT}"
-            echo "Preparing automatic patch release ${preview}"
-            exit 0
+          VERSION="${GITHUB_REF_NAME}"
+          if ! [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "::error::release workflow requires a stable semver tag like v1.2.3, got ${VERSION}"
+            exit 1
           fi
-
-          if [ "${status}" -eq 2 ]; then
-            tag="${preview}"
-            printf 'release_required=false\n' >> "${GITHUB_OUTPUT}"
-            printf 'released_tag=%s\n' "${tag}" >> "${GITHUB_OUTPUT}"
-
-            if gh release view "${tag}" >/dev/null 2>&1; then
-              reason="commit already released by tag ${tag}"
-            else
-              reason="commit already released by tag ${tag}; repair the GitHub release record manually"
-            fi
-
-            printf 'skip_reason=%s\n' "${reason}" >> "${GITHUB_OUTPUT}"
-            echo "Skipping automatic release: ${reason}"
-            cat "${workdir}/nextversion.stderr"
-            exit 0
-          fi
-
-          cat "${workdir}/nextversion.stderr" >&2
-          exit "${status}"
-
-      - name: Report skip reason
-        if: steps.version.outputs.release_required != 'true'
-        run: echo "${{ steps.version.outputs.skip_reason }}"
+          printf 'version=%s\n' "${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "Preparing tagged release ${VERSION}"
 
       - name: Run test suite
-        if: steps.version.outputs.release_required == 'true'
         run: go test ./...
 
       - name: Build release artifacts
-        if: steps.version.outputs.release_required == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
           COMMIT: ${{ github.sha }}
@@ -106,21 +68,24 @@ jobs:
             fi
 
             binary="${workdir}/ds${ext}"
-            GOOS="${GOOS}" GOARCH="${GOARCH}" go build -trimpath \
+            cp LICENSE README.md "${workdir}/"
+            CGO_ENABLED=0 GOOS="${GOOS}" GOARCH="${GOARCH}" go build -trimpath \
               -ldflags "-X dotenv-sync/pkg/dotenvsync.Version=${VERSION} -X dotenv-sync/pkg/dotenvsync.Commit=${COMMIT} -X dotenv-sync/pkg/dotenvsync.BuildTime=${BUILD_TIME}" \
               -o "${binary}" ./cmd/ds
 
             if [ "${GOOS}" = "windows" ]; then
               asset="dist/ds_${VERSION}_windows_${GOARCH}.zip"
-              (cd "${workdir}" && zip -q -j "../../$(basename "${asset}")" "ds${ext}")
+              (cd "${workdir}" && zip -q -j "../../$(basename "${asset}")" "ds${ext}" LICENSE README.md)
             else
               asset="dist/ds_${VERSION}_${GOOS}_${GOARCH}.tar.gz"
-              tar -C "${workdir}" -czf "${asset}" "ds${ext}"
+              tar -C "${workdir}" -czf "${asset}" "ds${ext}" LICENSE README.md
             fi
           done
 
+          checksum_file="dist/ds_${VERSION}_SHA256SUMS"
+          sha256sum dist/ds_* > "${checksum_file}"
+
       - name: Verify the Linux reference artifact reports its version
-        if: steps.version.outputs.release_required == 'true'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -130,10 +95,13 @@ jobs:
           test "$(dist/verify/ds --version)" = "ds ${VERSION}"
 
       - name: Publish GitHub release
-        if: steps.version.outputs.release_required == 'true'
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
           set -euo pipefail
+          if gh release view "${VERSION}" >/dev/null 2>&1; then
+            gh release upload "${VERSION}" dist/ds_* --clobber
+            exit 0
+          fi
           gh release create "${VERSION}" dist/ds_* --title "${VERSION}" --generate-notes --target "${GITHUB_SHA}"

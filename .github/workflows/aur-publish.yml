@@ -1,0 +1,133 @@
+name: Publish AUR package
+
+on:
+  release:
+    types:
+      - published
+
+permissions:
+  contents: read
+
+concurrency:
+  group: aur-publish-${{ github.event.release.tag_name }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Update dotenv-sync-bin on AUR
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Validate release metadata
+        id: meta
+        run: |
+          set -euo pipefail
+          VERSION="${{ github.event.release.tag_name }}"
+          if ! [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "publish=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping AUR publish for non-stable release tag ${VERSION}"
+            exit 0
+          fi
+          echo "publish=true" >> "${GITHUB_OUTPUT}"
+          echo "version=${VERSION}" >> "${GITHUB_OUTPUT}"
+          echo "pkgver=${VERSION#v}" >> "${GITHUB_OUTPUT}"
+          echo "amd64_asset=ds_${VERSION}_linux_amd64.tar.gz" >> "${GITHUB_OUTPUT}"
+          echo "arm64_asset=ds_${VERSION}_linux_arm64.tar.gz" >> "${GITHUB_OUTPUT}"
+
+      - name: Check AUR credentials
+        if: steps.meta.outputs.publish == 'true'
+        id: aur
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${AUR_SSH_PRIVATE_KEY}" ]; then
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+            echo "Skipping AUR publish because AUR_SSH_PRIVATE_KEY is not configured."
+            exit 0
+          fi
+          echo "configured=true" >> "${GITHUB_OUTPUT}"
+
+      - name: Download Linux release assets
+        if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          gh release download "${{ steps.meta.outputs.version }}" \
+            --pattern "${{ steps.meta.outputs.amd64_asset }}" \
+            --pattern "${{ steps.meta.outputs.arm64_asset }}" \
+            --dir dist
+
+      - name: Compute package checksums
+        if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
+        id: sums
+        run: |
+          set -euo pipefail
+          license="$(sha256sum LICENSE | awk '{print $1}')"
+          readme="$(sha256sum README.md | awk '{print $1}')"
+          amd64="$(sha256sum "dist/${{ steps.meta.outputs.amd64_asset }}" | awk '{print $1}')"
+          arm64="$(sha256sum "dist/${{ steps.meta.outputs.arm64_asset }}" | awk '{print $1}')"
+          echo "license=${license}" >> "${GITHUB_OUTPUT}"
+          echo "readme=${readme}" >> "${GITHUB_OUTPUT}"
+          echo "amd64=${amd64}" >> "${GITHUB_OUTPUT}"
+          echo "arm64=${arm64}" >> "${GITHUB_OUTPUT}"
+
+      - name: Configure AUR SSH access
+        if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
+        env:
+          AUR_SSH_PRIVATE_KEY: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          install -d -m 700 "${HOME}/.ssh"
+          printf '%s\n' "${AUR_SSH_PRIVATE_KEY}" > "${HOME}/.ssh/id_ed25519"
+          chmod 600 "${HOME}/.ssh/id_ed25519"
+          ssh-keyscan aur.archlinux.org >> "${HOME}/.ssh/known_hosts"
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Clone AUR repository
+        if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          git clone "ssh://aur@aur.archlinux.org/dotenv-sync-bin.git" aur-repo
+
+      - name: Render AUR package files
+        if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
+        run: |
+          set -euo pipefail
+          go run ./scripts/aurpkg \
+            --version "${{ steps.meta.outputs.version }}" \
+            --license-sha256 "${{ steps.sums.outputs.license }}" \
+            --readme-sha256 "${{ steps.sums.outputs.readme }}" \
+            --x86_64-sha256 "${{ steps.sums.outputs.amd64 }}" \
+            --aarch64-sha256 "${{ steps.sums.outputs.arm64 }}" \
+            --output-dir aur-repo
+
+      - name: Commit and push AUR update
+        if: steps.meta.outputs.publish == 'true' && steps.aur.outputs.configured == 'true'
+        env:
+          PKGVER: ${{ steps.meta.outputs.pkgver }}
+        run: |
+          set -euo pipefail
+          cd aur-repo
+          git add PKGBUILD .SRCINFO
+          if git diff --cached --quiet --exit-code; then
+            echo "AUR package is already up to date."
+            exit 0
+          fi
+          git commit -m "upgpkg: dotenv-sync-bin ${PKGVER}-1"
+          git push origin HEAD

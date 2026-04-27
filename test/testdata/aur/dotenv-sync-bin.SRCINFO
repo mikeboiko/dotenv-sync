@@ -1,0 +1,22 @@
+pkgbase = dotenv-sync-bin
+	pkgdesc = Keep .env files in sync with .env.example and Bitwarden secrets
+	pkgver = 1.2.3
+	pkgrel = 1
+	url = https://github.com/mikeboiko/dotenv-sync
+	arch = x86_64
+	arch = aarch64
+	license = MIT
+	provides = dotenv-sync
+	conflicts = dotenv-sync
+	conflicts = dotenv-sync-git
+	options = !strip
+	source = LICENSE::https://raw.githubusercontent.com/mikeboiko/dotenv-sync/v1.2.3/LICENSE
+	source = README.md::https://raw.githubusercontent.com/mikeboiko/dotenv-sync/v1.2.3/README.md
+	sha256sums = cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc
+	sha256sums = dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd
+	source_x86_64 = dotenv-sync-bin-1.2.3-x86_64.tar.gz::https://github.com/mikeboiko/dotenv-sync/releases/download/v1.2.3/ds_v1.2.3_linux_amd64.tar.gz
+	sha256sums_x86_64 = aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+	source_aarch64 = dotenv-sync-bin-1.2.3-aarch64.tar.gz::https://github.com/mikeboiko/dotenv-sync/releases/download/v1.2.3/ds_v1.2.3_linux_arm64.tar.gz
+	sha256sums_aarch64 = bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb
+
+pkgname = dotenv-sync-bin

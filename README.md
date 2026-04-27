@@ -20,6 +20,24 @@ The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 
 ## Install and build
 
+On Arch Linux, install the AUR package:
+
+```bash
+yay -S dotenv-sync-bin
+```
+
+That package installs the `ds` executable.
+
+Without an AUR helper:
+
+```bash
+git clone https://aur.archlinux.org/dotenv-sync-bin.git
+cd dotenv-sync-bin
+makepkg -si
+```
+
+To build from source locally:
+
 ```bash
 go build -o ./bin/ds ./cmd/ds
 ```
@@ -289,7 +307,7 @@ go test ./... -bench . -run '^$'
 
 ## Build a local versioned binary
 
-Preview the next automatic patch release from the current reachable semver tags:
+Preview the next patch tag from the current reachable semver tags:
 
 ```bash
 go run ./scripts/nextversion
@@ -301,6 +319,9 @@ Example outputs:
 v0.0.1
 v0.4.3
 ```
+
+`scripts/nextversion` is only a local helper. GitHub releases are created from
+explicit semver tags, not from every push to `main`.
 
 Then build a local binary with that predicted release metadata:
 
@@ -326,25 +347,47 @@ To install straight into `~/.local/bin/ds` with Git-derived version metadata:
 ./scripts/install-local.sh
 ```
 
-## CI
+## CI and releases
 
-GitHub Actions runs `go test ./...` on every push via
-`.github/workflows/go-tests.yml`.
+GitHub Actions runs `go test ./...` on every push, pull request, and manual
+dispatch via `.github/workflows/go-tests.yml`.
 
-GitHub Actions also runs `.github/workflows/release.yml` automatically on every
-push to `main`. The workflow computes the next patch version from reachable
-`vX.Y.Z` tags, skips reruns when the pushed commit is already released by a
-semver tag, runs `go test ./...`, builds versioned archives, verifies the Linux
-reference artifact with `ds --version`, and then publishes the GitHub release.
+To publish a release, push a stable semver tag:
 
-You can monitor the latest automatic release run with:
+```bash
+VERSION=$(go run ./scripts/nextversion)
+git tag -a "${VERSION}" -m "Release ${VERSION}"
+git push origin "${VERSION}"
+```
+
+`.github/workflows/release.yml` runs on semver tag pushes, reruns
+`go test ./...`, builds versioned archives for Linux, macOS, and Windows,
+bundles `README.md` and `LICENSE` into the release archives, writes
+`ds_<version>_SHA256SUMS`, verifies the Linux reference artifact with
+`ds --version`, and then creates or refreshes the matching GitHub release.
+
+If `AUR_SSH_PRIVATE_KEY` is configured, `.github/workflows/aur-publish.yml`
+also updates the `dotenv-sync-bin` AUR package from the published Linux release
+artifacts. The AUR package installs the `ds` executable even though the package
+name is `dotenv-sync-bin`.
+
+To enable AUR publishing from GitHub Actions:
+
+1. Add an SSH key to your AUR account.
+2. Save the matching private key as the `AUR_SSH_PRIVATE_KEY` repository secret.
+3. Make sure the `dotenv-sync-bin` AUR repo exists at
+   `ssh://aur@aur.archlinux.org/dotenv-sync-bin.git`.
+
+You can monitor the latest release run with:
 
 ```bash
 gh run list --workflow release.yml --limit 1
 gh run watch <run-id>
 ```
 
-If a rerun finds that the commit already has a release tag, the workflow exits
-without publishing again. If the tag exists but the GitHub release record is
-missing, repair that release manually instead of expecting the workflow to
-recreate it.
+The AUR publisher can be monitored separately with:
+
+```bash
+gh run list --workflow aur-publish.yml --limit 1
+gh run watch <run-id>
+```
