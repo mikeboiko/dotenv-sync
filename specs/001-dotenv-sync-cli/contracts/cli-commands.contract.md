@@ -7,7 +7,9 @@
 - Default schema file: `.env.example`
 - Default local env file: `.env`
 - Default config file: `.envsync.yaml`
-- Bitwarden access uses the `rbw` CLI in the MVP.
+- Provider access is handled through the configured adapter. Bitwarden uses the
+  `rbw` CLI, KeePass uses `keepassxc-cli`, and future providers may add their
+  own prerequisites.
 - Standard output carries normal status and preview information.
 - Standard error carries actionable failures.
 - Secret values are never printed; command output uses redacted or status-only
@@ -72,8 +74,8 @@ sync.
 **Behavior**:
 
 - Checks config readability.
-- Checks `rbw` presence.
-- Checks login and unlock state.
+- Checks provider-specific CLI, database, or local prerequisite availability.
+- Checks provider-specific authentication, unlock, or readability state.
 - Reports problem, impact, and next action for each failure.
 
 ## init

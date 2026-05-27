@@ -1,4 +1,4 @@
-# Workflow Contract: Automatic patch release automation
+# Workflow Contract: Automatic minor release automation
 
 ## Workflow
 
@@ -8,7 +8,7 @@
 ## Inputs
 
 - No manual release inputs are required.
-- Version calculation is always patch-only.
+- Version calculation is always minor-only for automatic `main` pushes.
 
 ## Preconditions
 
@@ -21,7 +21,7 @@
 ## Behavior
 
 1. Determine the latest reachable semantic version tag, ignoring unrelated tags.
-2. Compute the next patch version using `v0.0.0` as the baseline when no semver
+2. Compute the next minor version using `v0.0.0` as the baseline when no semver
    tag exists.
 3. If a reachable semver tag already points at the pushed commit, exit without
    creating another tag or release, report a clear skip reason, and require
@@ -32,8 +32,9 @@
 7. Verify the Linux reference artifact directly with `ds --version` before
    publication, and rely on automated tests to enforce version parity across the
    remaining artifact matrix.
-8. Create the Git tag and publish the GitHub release only after all builds
-   succeed.
+8. Create or refresh the GitHub release only after all builds succeed.
+9. Let downstream package-manager workflows consume the published GitHub release
+   and its artifacts after release publication succeeds.
 
 ## Artifact Naming
 

@@ -1,8 +1,8 @@
 ---
-description: 'Task list for automatic patch release automation'
+description: 'Task list for automatic minor release automation'
 ---
 
-# Tasks: Automatic patch release automation
+# Tasks: Automatic minor release automation
 
 **Input**: Design documents from `/specs/002-versioning-release-automation/`
 **Prerequisites**: `plan.md` (required), `spec.md` (required for user stories), `research.md`, `data-model.md`, `contracts/`, `quickstart.md`
@@ -36,38 +36,38 @@ tested, and validated independently.
 ## Phase 1: Setup (Shared Infrastructure)
 
 **Purpose**: Establish fixtures, helpers, and golden outputs used across
-automatic patch release planning and validation.
+automatic minor release planning and validation.
 
-- [X] T001 Create automatic release fixtures in `test/testdata/release/no-tags.txt`, `test/testdata/release/mixed-tags.txt`, `test/testdata/release/already-released.txt`, and `test/testdata/release/concurrent-main-push.txt`
-- [X] T002 [P] Extend release workflow helpers in `test/contract/helpers_test.go` and `test/integration/helpers_test.go`
-- [X] T003 [P] Capture golden release outcomes in `test/testdata/golden/release-published.txt`, `test/testdata/golden/release-skipped.txt`, and `test/testdata/release/expected-assets.txt`
+- [x] T001 Create automatic release fixtures in `test/testdata/release/no-tags.txt`, `test/testdata/release/mixed-tags.txt`, `test/testdata/release/already-released.txt`, and `test/testdata/release/concurrent-main-push.txt`
+- [x] T002 [P] Extend release workflow helpers in `test/contract/helpers_test.go` and `test/integration/helpers_test.go`
+- [x] T003 [P] Capture golden release outcomes in `test/testdata/golden/release-published.txt`, `test/testdata/golden/release-skipped.txt`, and `test/testdata/release/expected-assets.txt`
 
 ---
 
 ## Phase 2: Foundational (Blocking Prerequisites)
 
-**Purpose**: Build shared patch-calculation and release-state primitives that all
+**Purpose**: Build shared minor-version calculation and release-state primitives that all
 stories depend on.
 
 **⚠️ CRITICAL**: No user story work should begin until this phase is complete.
 
-- [X] T004 [P] Add failing unit coverage for patch-only next-version calculation and non-semver filtering in `internal/release/semver_test.go`
-- [X] T005 [P] Add failing unit coverage for already-released commit detection, branch validation, and release-state helpers in `internal/release/semver_test.go`
-- [X] T006 Implement patch-only version calculation and release-state helpers in `internal/release/semver.go`
-- [X] T007 Implement local next-patch preview defaults and release-logic isolation in `scripts/nextversion/main.go`
+- [x] T004 [P] Add failing unit coverage for minor-version next-version calculation and non-semver filtering in `internal/release/semver_test.go`
+- [x] T005 [P] Add failing unit coverage for already-released commit detection, branch validation, and release-state helpers in `internal/release/semver_test.go`
+- [x] T006 Implement minor-version calculation and release-state helpers in `internal/release/semver.go`
+- [x] T007 Implement local next-minor preview defaults and release-logic isolation in `scripts/nextversion/main.go`
 
-**Checkpoint**: Shared patch calculation and release-state helpers are ready for
+**Checkpoint**: Shared version calculation and release-state helpers are ready for
 story work.
 
 ---
 
-## Phase 3: User Story 1 - Publish the next patch release on every push to `main` (Priority: P1) 🎯 MVP
+## Phase 3: User Story 1 - Publish the next minor release on every push to `main` (Priority: P1) 🎯 MVP
 
-**Goal**: Publish a new patch release automatically whenever a new commit lands
+**Goal**: Publish a new minor release automatically whenever a new commit lands
 on `main`.
 
 **Independent Test**: Push a new commit to `main` in a test repository where the
-latest semver tag is `v0.4.2`, then verify the workflow computes `v0.4.3`, runs
+latest semver tag is `v0.4.2`, then verify the workflow computes `v0.5.0`, runs
 validation first, and publishes tagged artifacts only after the build matrix
 succeeds.
 
@@ -75,19 +75,19 @@ succeeds.
 
 > **NOTE: Write these tests FIRST and confirm they FAIL before implementation**
 
-- [X] T008 [P] [US1] Add workflow contract tests for `push` triggering, `main` filtering, and publish-after-build ordering in `test/contract/release_workflow_contract_test.go`
-- [X] T009 [P] [US1] Add integration tests for no-tag baselines and successive `main` pushes in `test/integration/release_workflow_test.go`
-- [X] T010 [P] [US1] Add unit tests for patch-preview CLI defaults in `scripts/nextversion/main_test.go`
+- [x] T008 [P] [US1] Add workflow contract tests for `push` triggering, `main` filtering, and publish-after-build ordering in `test/contract/release_workflow_contract_test.go`
+- [x] T009 [P] [US1] Add integration tests for no-tag baselines and successive `main` pushes in `test/integration/release_workflow_test.go`
+- [x] T010 [P] [US1] Add unit tests for minor-preview CLI defaults in `scripts/nextversion/main_test.go`
 
 ### Implementation for User Story 1
 
-- [X] T011 [US1] Replace manual dispatch with automatic `push` triggering and `main`-only filtering in `.github/workflows/release.yml`
-- [X] T012 [US1] Wire patch-only version calculation into `.github/workflows/release.yml` and `scripts/nextversion/main.go`
-- [X] T013 [US1] Build and publish deterministic patch release artifacts in `.github/workflows/release.yml`
-- [X] T014 [US1] Verify the Linux reference artifact directly with `ds --version` before publication in `.github/workflows/release.yml` and `test/contract/version_build_contract_test.go`
-- [X] T015 [US1] Add workflow concurrency and `<15 minute` budget validation in `.github/workflows/release.yml` and `specs/002-versioning-release-automation/quickstart.md`
+- [x] T011 [US1] Replace manual dispatch with automatic `push` triggering and `main`-only filtering in `.github/workflows/release.yml`
+- [x] T012 [US1] Wire minor-version calculation into `.github/workflows/release.yml` and `scripts/nextversion/main.go`
+- [x] T013 [US1] Build and publish deterministic minor release artifacts in `.github/workflows/release.yml`
+- [x] T014 [US1] Verify the Linux reference artifact directly with `ds --version` before publication in `.github/workflows/release.yml` and `test/contract/version_build_contract_test.go`
+- [x] T015 [US1] Add workflow concurrency and `<15 minute` budget validation in `.github/workflows/release.yml` and `specs/002-versioning-release-automation/quickstart.md`
 
-**Checkpoint**: User Story 1 publishes automatic patch releases from `main` and
+**Checkpoint**: User Story 1 publishes automatic minor releases from `main` and
 is ready to validate as the MVP slice.
 
 ---
@@ -105,16 +105,16 @@ release is created while logs explain the blocking condition.
 
 > **NOTE: Write these tests FIRST and confirm they FAIL before implementation**
 
-- [X] T016 [P] [US2] Add workflow contract tests for already-released skips, secret-safe failure output, and the absence of manual release inputs in `test/contract/release_workflow_contract_test.go`
-- [X] T017 [P] [US2] Add integration tests for already-tagged reruns, validation failures, and non-semver tag ignores in `test/integration/release_workflow_test.go`
-- [X] T018 [P] [US2] Add unit tests for HEAD release detection and duplicate-tag guardrails in `internal/release/semver_test.go`
+- [x] T016 [P] [US2] Add workflow contract tests for already-released skips, secret-safe failure output, and the absence of manual release inputs in `test/contract/release_workflow_contract_test.go`
+- [x] T017 [P] [US2] Add integration tests for already-tagged reruns, validation failures, and non-semver tag ignores in `test/integration/release_workflow_test.go`
+- [x] T018 [P] [US2] Add unit tests for HEAD release detection and duplicate-tag guardrails in `internal/release/semver_test.go`
 
 ### Implementation for User Story 2
 
-- [X] T019 [US2] Implement semver-tag-based already-released commit detection and duplicate-tag guardrails in `internal/release/semver.go`
-- [X] T020 [US2] Add skip-on-rerun, fail-before-tag, and token-safe failure handling in `.github/workflows/release.yml`
-- [X] T021 [US2] Align preview exit codes and workflow skip/failure vocabulary in `scripts/nextversion/main.go` and `.github/workflows/release.yml`
-- [X] T022 [US2] Document rerun and failure behavior in `README.md` and `specs/002-versioning-release-automation/quickstart.md`
+- [x] T019 [US2] Implement semver-tag-based already-released commit detection and duplicate-tag guardrails in `internal/release/semver.go`
+- [x] T020 [US2] Add skip-on-rerun, fail-before-tag, and token-safe failure handling in `.github/workflows/release.yml`
+- [x] T021 [US2] Align preview exit codes and workflow skip/failure vocabulary in `scripts/nextversion/main.go` and `.github/workflows/release.yml`
+- [x] T022 [US2] Document rerun and failure behavior in `README.md` and `specs/002-versioning-release-automation/quickstart.md`
 
 **Checkpoint**: User Story 2 makes the automatic release flow safe to rerun and
 safe to fail.
@@ -123,7 +123,7 @@ safe to fail.
 
 ## Phase 5: User Story 3 - Preview and verify automatic releases locally and in CI (Priority: P3)
 
-**Goal**: Let contributors predict the next automatic patch release and verify
+**Goal**: Let contributors predict the next automatic minor release and verify
 published binaries against the same metadata contract used in CI.
 
 **Independent Test**: Run the local preview helper, build a binary with the
@@ -134,15 +134,15 @@ artifact contract used in CI.
 
 > **NOTE: Write these tests FIRST and confirm they FAIL before implementation**
 
-- [X] T023 [P] [US3] Add contract tests for local next-patch preview and artifact self-reporting in `test/contract/version_build_contract_test.go`
-- [X] T024 [P] [US3] Add integration tests for local preview parity and versioned artifact verification in `test/integration/version_build_test.go`
-- [X] T025 [P] [US3] Add unit tests for version metadata fallback paths used by release verification in `pkg/dotenvsync/version_test.go`
+- [x] T023 [P] [US3] Add contract tests for local next-minor preview and artifact self-reporting in `test/contract/version_build_contract_test.go`
+- [x] T024 [P] [US3] Add integration tests for local preview parity and versioned artifact verification in `test/integration/version_build_test.go`
+- [x] T025 [P] [US3] Add unit tests for version metadata fallback paths used by release verification in `pkg/dotenvsync/version_test.go`
 
 ### Implementation for User Story 3
 
-- [X] T026 [US3] Document local preview, push-to-`main` release monitoring, and artifact verification in `README.md` and `specs/002-versioning-release-automation/quickstart.md`
-- [X] T027 [US3] Align local preview examples with automatic patch semantics in `scripts/nextversion/main.go`, `README.md`, and `specs/002-versioning-release-automation/quickstart.md`
-- [X] T028 [US3] Validate cross-platform release artifact version parity beyond the Linux reference check in `test/contract/version_build_contract_test.go`, `test/integration/version_build_test.go`, and `.github/workflows/release.yml`
+- [x] T026 [US3] Document local preview, push-to-`main` release monitoring, and artifact verification in `README.md` and `specs/002-versioning-release-automation/quickstart.md`
+- [x] T027 [US3] Align local preview examples with automatic minor semantics in `scripts/nextversion/main.go`, `README.md`, and `specs/002-versioning-release-automation/quickstart.md`
+- [x] T028 [US3] Validate cross-platform release artifact version parity beyond the Linux reference check in `test/contract/version_build_contract_test.go`, `test/integration/version_build_test.go`, and `.github/workflows/release.yml`
 
 **Checkpoint**: User Story 3 makes local and CI verification consistent and
 independently usable.
@@ -154,11 +154,11 @@ independently usable.
 **Purpose**: Finish documentation, regression coverage, UX consistency, and
 budget validation across all stories.
 
-- [X] T029 [P] Audit module boundaries and no-env-workflow impact in `.github/workflows/release.yml`, `internal/release/semver.go`, and `scripts/nextversion/main.go`
-- [X] T030 [P] Audit consistent automatic-release vocabulary and secret-safe logs in `.github/workflows/release.yml`, `README.md`, and `test/contract/release_workflow_contract_test.go`
-- [X] T031 Add regression coverage for concurrent `main` pushes and partial-release prevention in `test/contract/release_workflow_contract_test.go`, `test/integration/release_workflow_test.go`, and `internal/release/semver_test.go`
-- [X] T032 Verify performance and dependency budgets in `.github/workflows/release.yml`, `scripts/nextversion/main.go`, and `go.mod`
-- [X] T033 Run quickstart validation and refresh golden outputs in `specs/002-versioning-release-automation/quickstart.md`, `test/testdata/golden/release-published.txt`, and `test/testdata/golden/release-skipped.txt`
+- [x] T029 [P] Audit module boundaries and no-env-workflow impact in `.github/workflows/release.yml`, `internal/release/semver.go`, and `scripts/nextversion/main.go`
+- [x] T030 [P] Audit consistent automatic-release vocabulary and secret-safe logs in `.github/workflows/release.yml`, `README.md`, and `test/contract/release_workflow_contract_test.go`
+- [x] T031 Add regression coverage for concurrent `main` pushes and partial-release prevention in `test/contract/release_workflow_contract_test.go`, `test/integration/release_workflow_test.go`, and `internal/release/semver_test.go`
+- [x] T032 Verify performance and dependency budgets in `.github/workflows/release.yml`, `scripts/nextversion/main.go`, and `go.mod`
+- [x] T033 Run quickstart validation and refresh golden outputs in `specs/002-versioning-release-automation/quickstart.md`, `test/testdata/golden/release-published.txt`, and `test/testdata/golden/release-skipped.txt`
 
 ---
 
@@ -244,13 +244,13 @@ Task: "T025 [US3] Add version metadata unit tests in pkg/dotenvsync/version_test
 1. Complete Phase 1: Setup
 2. Complete Phase 2: Foundational
 3. Complete Phase 3: User Story 1
-4. **Stop and validate**: Confirm a push to `main` produces the next patch
+4. **Stop and validate**: Confirm a push to `main` produces the next minor
    release after validation and build completion
 
 ### Incremental Delivery
 
 1. Finish Setup and Foundational work
-2. Deliver User Story 1 for automatic patch publication on `main`
+2. Deliver User Story 1 for automatic minor publication on `main`
 3. Deliver User Story 2 for rerun safety and actionable failures
 4. Deliver User Story 3 for local preview and CI verification parity
 5. Finish polish, regression validation, and quickstart verification
@@ -271,4 +271,4 @@ Task: "T025 [US3] Add version metadata unit tests in pkg/dotenvsync/version_test
 - [P] tasks touch different files or become independent after shared prerequisites complete
 - Each user story is independently testable at its checkpoint
 - Suggested MVP scope: **User Story 1**
-- The generated plan assumes release automation is patch-only on pushes to `main`; if major/minor automation is later required, refresh `spec.md`, `plan.md`, and this task list together
+- The generated plan assumes release automation is minor-only on pushes to `main`; if major or patch automation is later required, refresh `spec.md`, `plan.md`, and this task list together

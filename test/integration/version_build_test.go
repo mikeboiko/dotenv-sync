@@ -29,7 +29,7 @@ func TestVersionedBuildIntegration(t *testing.T) {
 			t.Fatalf("preview next version failed: code=%d stderr=%q", code, stderr)
 		}
 		version := strings.TrimSpace(stdout)
-		if version != "v0.4.3" {
+		if version != "v0.5.0" {
 			t.Fatalf("preview version = %q", version)
 		}
 

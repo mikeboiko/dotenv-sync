@@ -18,9 +18,13 @@ func main() {
 }
 
 func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	var dir string
+	var (
+		bump string
+		dir  string
+	)
 	flags := flag.NewFlagSet("nextversion", flag.ContinueOnError)
 	flags.SetOutput(stderr)
+	flags.StringVar(&bump, "bump", "minor", "semantic version part to bump: patch, minor, or major")
 	flags.StringVar(&dir, "dir", ".", "repository directory to inspect")
 	if err := flags.Parse(args); err != nil {
 		return 1
@@ -46,7 +50,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 		return alreadyReleasedExitCode
 	}
 
-	next, err := release.NextPatchVersionForRepo(ctx, repoDir)
+	next, err := release.NextVersionForRepo(ctx, repoDir, bump)
 	if err != nil {
 		fmt.Fprintln(stderr, err)
 		return 1

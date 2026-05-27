@@ -3,17 +3,17 @@
 ## Goal
 
 Validate the planned cross-platform Go CLI workflow for syncing `.env` files
-from `.env.example` and Bitwarden through `rbw` without changing normal
+from `.env.example` and a configured secret provider without changing normal
 developer commands.
 
 ## Prerequisites
 
 1. Go 1.22 or newer is installed.
-2. `rbw` is installed and available on `PATH`.
-3. The user is logged in to Bitwarden through `rbw` and can unlock the local
-   Bitwarden database.
-4. The repository contains the planned source tree and command
-   implementations.
+2. A supported provider CLI is installed and available on `PATH` (for example,
+   `rbw` for Bitwarden or `keepassxc-cli` for KeePass).
+3. The configured provider is ready for access (for example, the user is logged
+   in and unlocked in Bitwarden, or has a readable KeePass database and group).
+4. The repository contains the planned source tree and command implementations.
 
 ## 1. Build the CLI
 
@@ -34,7 +34,7 @@ JWT_SECRET=
 PORT=8080
 ```
 
-Optionally create `.envsync.yaml`:
+Optionally create `.envsync.yaml` (Bitwarden example):
 
 ```yaml
 provider: bitwarden
@@ -47,9 +47,11 @@ mapping:
 ```
 
 If `item_name` is omitted, `ds` uses the Git repository directory name by
-default. Provider-managed keys are resolved from a single Bitwarden item, with
-each schema key using the same-named custom field unless `mapping` overrides
-the field name.
+default. In the Bitwarden flow, provider-managed keys are resolved from a
+single item, with each schema key using the same-named custom field unless
+`mapping` overrides the field name. KeePass projects use `provider: keepass`
+plus `keepass_database` and `keepass_group` instead; current built-in
+providers only use `mapping` for Bitwarden field-name overrides.
 
 ## 3. Verify prerequisites
 
@@ -59,8 +61,8 @@ the field name.
 
 Expected result:
 
-- Reports whether `rbw` is installed.
-- Reports whether the user is logged in and the database is unlocked.
+- Reports whether the configured provider CLI is installed.
+- Reports whether the configured provider-specific prerequisites are ready.
 - Does not print any secret values.
 
 ## 4. Preview the sync without writing files
@@ -85,7 +87,7 @@ Expected result:
 
 - Creates or updates `.env`.
 - Copies safe defaults from `.env.example`.
-- Resolves blank schema entries from Bitwarden through `rbw`.
+- Resolves blank schema entries from the configured provider.
 - Preserves comments, ordering, and existing line endings when possible.
 
 ## 6. Inspect drift and unresolved values
@@ -147,8 +149,8 @@ Expected result:
 
 Expected result:
 
-- `doctor` verifies `rbw` availability and unlock state with actionable recovery
-  guidance.
+- `doctor` verifies configured-provider availability and readiness with
+  actionable recovery guidance.
 - `sync` writes `.env` from `.env.example` while preserving deterministic file
   formatting and redacting secrets in command output.
 - `diff`, `validate`, and `missing` use the shared status vocabulary and return

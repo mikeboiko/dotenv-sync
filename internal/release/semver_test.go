@@ -30,6 +30,16 @@ func TestNextPatchVersion(t *testing.T) {
 	}
 }
 
+func TestNextMinorVersion(t *testing.T) {
+	got, err := NextMinorVersion("v1.4.10")
+	if err != nil {
+		t.Fatalf("next minor version: %v", err)
+	}
+	if got != "v1.5.0" {
+		t.Fatalf("next minor = %q", got)
+	}
+}
+
 func TestReleaseAssetNames(t *testing.T) {
 	got := []string{
 		AssetName("v1.2.3", "linux", "amd64"),
@@ -79,6 +89,21 @@ func TestNextPatchVersionForRepoUsesBaselineWhenNoTags(t *testing.T) {
 	}
 	if got != "v0.0.1" {
 		t.Fatalf("baseline patch version = %q", got)
+	}
+}
+
+func TestNextMinorVersionForRepoUsesBaselineWhenNoTags(t *testing.T) {
+	repo := t.TempDir()
+	initGitRepository(t, repo)
+	writeRepoFile(t, repo, "README.md", "version tests\n")
+	commitRepo(t, repo, "initial")
+
+	got, err := NextMinorVersionForRepo(context.Background(), repo)
+	if err != nil {
+		t.Fatalf("next minor version from repo: %v", err)
+	}
+	if got != "v0.1.0" {
+		t.Fatalf("baseline minor version = %q", got)
 	}
 }
 

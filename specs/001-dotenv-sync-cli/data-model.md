@@ -51,56 +51,69 @@ Represents one ordered line in a dotenv file.
 
 Represents optional project configuration from `.envsync.yaml`.
 
-| Field      | Type              | Description                                                                                  |
-| ---------- | ----------------- | -------------------------------------------------------------------------------------------- |
-| provider   | string            | Selected provider family, defaulting to `bitwarden` and implemented through `rbw` in the MVP |
-| schemaFile | string            | Override path for `.env.example`                                                             |
-| envFile    | string            | Override path for `.env`                                                                     |
-| itemName   | string            | Override for the default repo-scoped Bitwarden item name used for provider lookups           |
-| vault      | string            | Optional vault or collection hint                                                            |
-| mapping    | map[string]string | Schema key to Bitwarden field-name override within the selected item                         |
+| Field           | Type              | Description                                                                               |
+| --------------- | ----------------- | ----------------------------------------------------------------------------------------- |
+| provider        | string            | Selected provider family, defaulting to `bitwarden`                                       |
+| schemaFile      | string            | Override path for `.env.example`                                                          |
+| envFile         | string            | Override path for `.env`                                                                  |
+| itemName        | string            | Override for the default repo-scoped Bitwarden item name used for provider lookups        |
+| storageMode     | string            | Bitwarden storage strategy (`fields` or `note_json`) when provider write-back is used     |
+| vault           | string            | Reserved provider-specific scope hint; current built-in adapters do not use it            |
+| mapping         | map[string]string | Schema key to provider-specific lookup override for adapters that support alternate names |
+| keepassDatabase | string            | Path to the KeePass `.kdbx` file when `provider=keepass`                                  |
+| keepassGroup    | string            | Group inside the KeePass database that stores env-var entries                             |
 
 **Validation rules**:
 
 - `provider` must map to a registered adapter.
 - `schemaFile` and `envFile` must not point to the same path.
-- `itemName` defaults to the Git repository root directory name, or the
-  current working-directory name when Git metadata is unavailable.
+- `itemName` defaults to the Git repository root directory name, or the current
+  working-directory name when Git metadata is unavailable, when the selected
+  provider uses repo-scoped item lookups.
+- `storageMode` applies only to Bitwarden-backed write flows and defaults to
+  `fields`.
 - Mapping keys must be unique and reference valid schema keys when used.
-- Mapping values override the default field name for a schema key but stay
-  within the selected Bitwarden item in the MVP design.
+- Mapping values override the default lookup name for a schema key within the
+  selected provider's addressing model; current built-in adapters use mapping
+  for Bitwarden field-name overrides only.
+- `vault` is reserved for future provider-specific scoping and is currently
+  ignored by the built-in Bitwarden and KeePass adapters.
+- `keepassDatabase` and `keepassGroup` are required only when
+  `provider=keepass`.
 
 ### ProviderStatus
 
 Represents current readiness of the configured secret provider.
 
-| Field         | Type   | Description                                                      |
-| ------------- | ------ | ---------------------------------------------------------------- |
-| provider      | string | Provider name under test                                         |
-| cliInstalled  | bool   | Whether the `rbw` CLI required for Bitwarden access is available |
-| authenticated | bool   | Whether the user is signed in                                    |
-| unlocked      | bool   | Whether the vault is unlocked and readable                       |
-| message       | string | Human-readable diagnostic summary                                |
+| Field         | Type   | Description                                                        |
+| ------------- | ------ | ------------------------------------------------------------------ |
+| provider      | string | Provider name under test                                           |
+| cliInstalled  | bool   | Whether the configured provider CLI or local integration is usable |
+| authenticated | bool   | Whether the provider session or equivalent auth state is ready     |
+| unlocked      | bool   | Whether the provider data source is unlocked and readable          |
+| message       | string | Human-readable diagnostic summary                                  |
 
 **State transitions**:
 
-- `unknown -> unavailable` when the `rbw` binary cannot be found.
+- `unknown -> unavailable` when the configured provider CLI or database cannot
+  be found.
 - `unknown -> installed` when the CLI is present.
-- `installed -> authenticated` when login state is confirmed.
+- `installed -> authenticated` when provider login or equivalent readiness is
+  confirmed.
 - `authenticated -> unlocked` when secrets can be queried.
 
 ### SecretResolution
 
 Represents the result of resolving one schema key.
 
-| Field       | Type                                                        | Description                                   |
-| ----------- | ----------------------------------------------------------- | --------------------------------------------- |
-| key         | string                                                      | Schema key being resolved                     |
-| source      | enum (`static`, `provider`, `missing`, `unmapped`, `error`) | Resolution outcome                            |
-| providerRef | string                                                      | Mapping or provider reference used for lookup |
-| value       | string                                                      | Resolved secret or copied static literal      |
-| redacted    | string                                                      | Safe display form for logs and previews       |
-| issueCode   | string                                                      | Optional error or warning code                |
+| Field       | Type                                                        | Description                                          |
+| ----------- | ----------------------------------------------------------- | ---------------------------------------------------- |
+| key         | string                                                      | Schema key being resolved                            |
+| source      | enum (`static`, `provider`, `missing`, `unmapped`, `error`) | Resolution outcome                                   |
+| providerRef | string                                                      | Lookup name or entry path used for the provider call |
+| value       | string                                                      | Resolved secret or copied static literal             |
+| redacted    | string                                                      | Safe display form for logs and previews              |
+| issueCode   | string                                                      | Optional error or warning code                       |
 
 **Validation rules**:
 

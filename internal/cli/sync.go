@@ -14,7 +14,7 @@ func newSyncCommand(s streams, opts *rootOptions) *cobra.Command {
 	var dryRun bool
 	cmd := &cobra.Command{
 		Use:   "sync",
-		Short: "Create or refresh .env from the schema and rbw",
+		Short: "Create or refresh .env from the schema and provider",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig(opts)
 			if err != nil {

@@ -3,7 +3,7 @@
 pkgname=dotenv-sync-bin
 pkgver=1.2.3
 pkgrel=1
-pkgdesc='Keep .env files in sync with .env.example and Bitwarden secrets'
+pkgdesc='Keep .env files in sync with .env.example and provider-managed secrets'
 arch=('x86_64' 'aarch64')
 url='https://github.com/mikeboiko/dotenv-sync'
 license=('MIT')

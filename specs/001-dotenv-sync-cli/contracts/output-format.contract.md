@@ -52,6 +52,6 @@ Every actionable failure includes:
 
 Example:
 
-- `Problem: Bitwarden database is locked`
+- `Problem: configured provider is locked or unavailable`
 - `Impact: sync cannot resolve provider-managed schema keys`
-- `Action: run 'rbw unlock' and retry`
+- `Action: unlock or fix the configured provider and retry`

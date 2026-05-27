@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestRunDefaultsToPatchPreview(t *testing.T) {
+func TestRunDefaultsToMinorPreview(t *testing.T) {
 	repo := t.TempDir()
 	initGitRepo(t, repo)
 	writeFile(t, filepath.Join(repo, "README.md"), "release tests\n")
@@ -21,6 +21,30 @@ func TestRunDefaultsToPatchPreview(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	code := run(context.Background(), []string{"--dir", repo}, &stdout, &stderr)
+	if code != 0 {
+		t.Fatalf("run exit code = %d stderr=%q", code, stderr.String())
+	}
+	if strings.TrimSpace(stdout.String()) != strings.TrimSpace(readGoldenFile(t, "release-published.txt", map[string]string{
+		"{{VERSION}}": "v0.5.0",
+	})) {
+		t.Fatalf("preview stdout = %q", stdout.String())
+	}
+	if stderr.Len() != 0 {
+		t.Fatalf("unexpected stderr: %q", stderr.String())
+	}
+}
+
+func TestRunSupportsExplicitPatchPreview(t *testing.T) {
+	repo := t.TempDir()
+	initGitRepo(t, repo)
+	writeFile(t, filepath.Join(repo, "README.md"), "release tests\n")
+	commitAll(t, repo, "initial")
+	tagRepo(t, repo, "v0.4.2")
+	writeFile(t, filepath.Join(repo, "CHANGELOG.md"), "next change\n")
+	commitAll(t, repo, "next")
+
+	var stdout, stderr bytes.Buffer
+	code := run(context.Background(), []string{"--dir", repo, "--bump", "patch"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("run exit code = %d stderr=%q", code, stderr.String())
 	}
@@ -78,7 +102,7 @@ func TestRunFailsWhenNextTagAlreadyExistsOutsideMainHistory(t *testing.T) {
 	runGit(t, repo, "switch", "-c", "side-release")
 	writeFile(t, filepath.Join(repo, "side.txt"), "side release\n")
 	commitAll(t, repo, "side release")
-	tagRepo(t, repo, "v0.4.3")
+	tagRepo(t, repo, "v0.5.0")
 
 	runGit(t, repo, "switch", "main")
 	writeFile(t, filepath.Join(repo, "main.txt"), "main release\n")
@@ -92,7 +116,7 @@ func TestRunFailsWhenNextTagAlreadyExistsOutsideMainHistory(t *testing.T) {
 	if stdout.Len() != 0 {
 		t.Fatalf("unexpected stdout: %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "next release tag v0.4.3 already exists") {
+	if !strings.Contains(stderr.String(), "next release tag v0.5.0 already exists") {
 		t.Fatalf("unexpected stderr: %q", stderr.String())
 	}
 }

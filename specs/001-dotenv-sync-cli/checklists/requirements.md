@@ -32,7 +32,8 @@
 
 ## Notes
 
-- Validation passed and was rechecked after the `rbw` and `ds` revisions with no open clarification markers.
+- Validation passed and was rechecked after the provider-adapter and `ds`
+  revisions with no open clarification markers.
 - The specification covers the constitution-derived concerns for workflow preservation,
   deterministic file behavior, UX consistency with secret-safe output, and
   performance expectations.

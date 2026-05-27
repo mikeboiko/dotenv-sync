@@ -43,16 +43,18 @@
   - In-place string replacement: Rejected because it is fragile around
     quoting, duplicates, multiline values, and reverse-sync behavior.
 
-## Decision 4: Integrate Bitwarden through the `rbw` CLI behind a provider interface
+## Decision 4: Integrate provider CLIs behind a provider interface, starting with Bitwarden via `rbw`
 
-- **Decision**: Use `exec.CommandContext` to invoke the `rbw` CLI from a
-  `provider.Provider` adapter rather than calling shell wrappers or
-  implementing a direct Bitwarden API client for the MVP.
+- **Decision**: Use `exec.CommandContext` to invoke provider CLIs from
+  `provider.Provider` adapters, starting with the `rbw` CLI for the MVP
+  Bitwarden integration rather than calling shell wrappers or implementing a
+  direct Bitwarden API client.
 - **Rationale**: The installed `rbw` CLI already exposes the login, unlock,
   sync, list, and get operations needed for the MVP. Wrapping it in a
-  provider interface keeps Bitwarden-specific logic out of the sync engine
-  and preserves an upgrade path for future providers or future Bitwarden CLI
-  variants.
+  provider interface keeps provider-specific logic out of the sync engine and
+  preserves an upgrade path for future providers or future Bitwarden CLI
+  variants. That same interface now also accommodates KeePass through
+  `keepassxc-cli`.
 - **Alternatives considered**:
   - Direct Bitwarden API integration: Rejected because it would duplicate
     auth and session complexity that the CLI already solves.
@@ -65,8 +67,8 @@
 ## Decision 5: Use `.envsync.yaml` for optional project configuration
 
 - **Decision**: Support an optional `.envsync.yaml` file for provider
-  selection, vault hints, schema and env file paths, and explicit key
-  mapping.
+  selection, provider-specific lookup settings, schema and env file paths, and
+  explicit key mapping.
 - **Rationale**: The user already described a YAML mapping file, and YAML is
   readable for teams while remaining optional for zero-config onboarding. The
   dependency cost of `gopkg.in/yaml.v3` is justified because it preserves the

@@ -1,15 +1,15 @@
-# Feature Specification: Automatic patch release automation
+# Feature Specification: Automatic minor release automation
 
 **Feature Branch**: `002-versioning-release-automation`  
 **Created**: 2026-03-30  
 **Status**: Draft  
-**Input**: User description: "Right now, I have a manual release CI/CD process. I want you to automate this, so a patch version is bumped, every time I push to main."
+**Input**: User description: "Right now, I have a manual release CI/CD process. I want you to automate this, so a minor version is bumped every time I push to main, GitHub artifacts are built, and downstream package managers can publish from the successful release."
 
 ## User Scenarios & Testing _(mandatory)_
 
-### User Story 1 - Publish the next patch release on every push to `main` (Priority: P1)
+### User Story 1 - Publish the next minor release on every push to `main` (Priority: P1)
 
-As a maintainer, I want each push to `main` to publish the next patch release
+As a maintainer, I want each push to `main` to publish the next minor release
 automatically so release versions stay aligned with merged code without manual
 workflow dispatches or local tagging.
 
@@ -17,20 +17,20 @@ workflow dispatches or local tagging.
 that turns the current manual release flow into automatic CI/CD.
 
 **Independent Test**: Push a new commit to `main` in a test repository where the
-latest semver tag is `v0.4.2`, then verify the workflow computes `v0.4.3`, runs
+latest semver tag is `v0.4.2`, then verify the workflow computes `v0.5.0`, runs
 validation, and publishes tagged artifacts only after the build matrix succeeds.
 
 **Acceptance Scenarios**:
 
 1. **Given** the latest reachable semver tag is `v0.4.2`, **When** a new commit
-   is pushed to `main`, **Then** the workflow computes `v0.4.3`, validates the
+   is pushed to `main`, **Then** the workflow computes `v0.5.0`, validates the
    repository, and publishes that release.
 2. **Given** the repository has no prior semver tags, **When** the first commit
    is pushed to `main` after automation is enabled, **Then** the workflow uses
-   `v0.0.0` as the baseline and publishes `v0.0.1`.
+   `v0.0.0` as the baseline and publishes `v0.1.0`.
 3. **Given** two different commits are pushed to `main` in sequence, **When**
    both workflows complete successfully, **Then** each commit receives a unique,
-   monotonically increasing patch release with matching tag, release title, and
+   monotonically increasing minor release with matching tag, release title, and
    artifact names.
 
 ---
@@ -60,14 +60,14 @@ release is created while logs explain the blocking condition.
    the failure logs explain what blocked publication and what to inspect next.
 3. **Given** unrelated Git tags exist in the repository, **When** the workflow
    calculates the next release, **Then** those tags are ignored and only the
-   latest reachable semantic version influences the patch bump.
+   latest reachable semantic version influences the minor bump.
 
 ---
 
 ### User Story 3 - Preview and verify automatic releases locally and in CI (Priority: P3)
 
 As a contributor, I want a local preview and verification path that matches CI so
-I can predict the next automatic patch release and confirm published binaries
+I can predict the next automatic minor release and confirm published binaries
 self-report the expected version.
 
 **Why this priority**: Automatic releases are easier to trust when contributors
@@ -80,7 +80,7 @@ its `ds --version` output with the release artifact contract used in CI.
 **Acceptance Scenarios**:
 
 1. **Given** the latest semver tag is `v0.4.2`, **When** a contributor runs the
-   local preview helper, **Then** it reports `v0.4.3` without requiring a manual
+   local preview helper, **Then** it reports `v0.5.0` without requiring a manual
    bump argument.
 2. **Given** the release workflow publishes artifacts for the supported target
    matrix, **When** one of those binaries is executed with `--version`, **Then**
@@ -97,11 +97,13 @@ its `ds --version` output with the release artifact contract used in CI.
 - What happens when the workflow is rerun for a commit that already has a
   reachable semver tag?
 - What happens when the repository contains non-semver tags that should not
-  influence the next patch version?
+  influence the next minor version?
 - What happens when the repository has no prior semver tags?
 - How are partially built artifacts handled if one target fails after others
   succeed?
 - What happens when a push occurs on a branch other than `main`?
+- How do downstream package-manager workflows behave when release credentials are
+  missing or the package repository is already up to date?
 
 ## User Experience Consistency _(mandatory)_
 
@@ -115,7 +117,8 @@ its `ds --version` output with the release artifact contract used in CI.
 - **UX-004**: Tag names, GitHub release titles, and artifact file names MUST
   match the published semantic version exactly.
 - **UX-005**: Local preview and CI automation MUST describe the behavior as a
-  patch-only release flow triggered by pushes to `main`.
+  minor-release flow triggered by pushes to `main`, with downstream package
+  publishers consuming the successful GitHub release.
 
 ## Requirements _(mandatory)_
 
@@ -123,11 +126,11 @@ its `ds --version` output with the release artifact contract used in CI.
 
 - **FR-001**: The system MUST trigger release automation automatically on pushes
   to the repository default branch (`main`).
-- **FR-002**: The system MUST compute the next release version as the next patch
+- **FR-002**: The system MUST compute the next release version as the next minor
   increment from the latest reachable semantic version tag, using `v0.0.0` as
   the baseline when no semver tag exists.
 - **FR-003**: The system MUST not require manual bump selection, manual source
-  edits, or local Git tag creation to publish a patch release.
+  edits, or local Git tag creation to publish a minor release.
 - **FR-004**: The workflow MUST validate the pushed `main` commit and run
   `go test ./...` before creating any release tag or GitHub release.
 - **FR-005**: The workflow MUST publish a Git tag, a GitHub release, and
@@ -137,7 +140,7 @@ its `ds --version` output with the release artifact contract used in CI.
   commit and MUST treat a reachable semver tag on that commit as the idempotency
   source of truth during reruns or repeated workflow execution.
 - **FR-007**: The system MUST ignore non-semver tags when computing the next
-  patch release.
+  minor release.
 - **FR-008**: The system MUST serialize automatic release runs for `main` so
   overlapping pushes cannot publish conflicting versions.
 - **FR-009**: Published artifact names and GitHub release titles MUST include the
@@ -147,9 +150,12 @@ its `ds --version` output with the release artifact contract used in CI.
   before publication, while automated tests enforce version-parity rules for the
   remaining release artifacts.
 - **FR-011**: Local preview tooling and documentation MUST explain how to
-  predict the next automatic patch release and how to monitor the release run.
+  predict the next automatic minor release and how to monitor the release run.
 - **FR-012**: Existing test automation (`go test ./...`) MUST remain the
   validation gate for release publication.
+- **FR-013**: Downstream package-manager workflows MUST consume the published
+  GitHub release and artifacts only after the upstream build and release steps
+  succeed.
 
 ### Key Entities _(include if feature involves data)_
 
@@ -168,7 +174,7 @@ its `ds --version` output with the release artifact contract used in CI.
 
 - **PR-001**: Automatic release publication for the supported target matrix MUST
   complete within 15 minutes under normal GitHub-hosted runner availability.
-- **PR-002**: Local patch preview MUST complete within 1 second on a normal
+- **PR-002**: Local minor preview MUST complete within 1 second on a normal
   development machine because it only inspects repository metadata.
 - **PR-003**: The feature MUST not add any new runtime dependency to the shipped
   `ds` binary beyond the existing Go module dependencies.
@@ -177,16 +183,16 @@ its `ds --version` output with the release artifact contract used in CI.
 
 ### Measurable Outcomes
 
-- **SC-001**: Maintainers can publish a new patch release by pushing to `main`
+- **SC-001**: Maintainers can publish a new minor release by pushing to `main`
   without manually dispatching a workflow or creating a Git tag locally.
 - **SC-002**: Every successful `main` push that reaches the release workflow can
-  produce exactly one new patch release with matching tag, release title, and
+  produce exactly one new minor release with matching tag, release title, and
   artifact names.
 - **SC-003**: 100% of published release artifacts are built from the same release
   version input, with the Linux reference artifact verified directly in CI and
   cross-platform version parity enforced by automated tests.
 - **SC-004**: Workflow reruns or failed validations publish no duplicate or
   partial releases.
-- **SC-005**: Contributors can predict the next automatic patch version locally
+- **SC-005**: Contributors can predict the next automatic minor version locally
   and follow the documented monitoring and verification flow without reading the
   implementation.

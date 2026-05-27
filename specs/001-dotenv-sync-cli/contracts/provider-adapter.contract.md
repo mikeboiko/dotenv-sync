@@ -14,8 +14,10 @@ A provider adapter is responsible for:
 The initial Go interface is expected to support these behaviors:
 
 - `Name()` returns the provider name
-- `CheckReadiness(...)` verifies CLI installation, authentication, and unlock state
-- `Resolve(...)` returns one resolution result for a schema key or mapped lookup
+- `CheckReadiness(...)` verifies CLI installation and provider-specific access
+  state such as login, unlock, database, or group readiness
+- `Resolve(...)` returns one resolution result for a schema key and provider
+  lookup reference
 - `ResolveMany(...)` may optimize repeated lookups while preserving one logical
   lookup per distinct key per command
 
@@ -40,7 +42,21 @@ The initial Go interface is expected to support these behaviors:
   performance budget.
 - Unlock and login failures surface actionable recovery guidance.
 
+## KeePass-Specific Expectations
+
+- Readiness checks use the `keepassxc-cli` binary directly.
+- The configured database path and group define the lookup root for provider
+  values.
+- Unmapped schema keys resolve as `<group>/<schema-key>` entry paths.
+- KeePass lookup paths are derived from `<group>/<schema-key>`; current
+  Bitwarden-style `mapping` overrides do not change KeePass entry paths.
+- The adapter prompts for the KeePass master password at most once per command
+  and reuses it for later lookups in the same process.
+- The adapter caches repeated lookups within a command to satisfy the
+  performance budget.
+
 ## Roadmap Note
 
-- Future roadmap work may add a `bw`-backed Bitwarden client behind the same
-  provider interface without changing sync-engine contracts.
+- Future roadmap work may add new providers, or alternate clients for existing
+  providers, behind the same provider interface without changing sync-engine
+  contracts.

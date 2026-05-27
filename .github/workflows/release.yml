@@ -2,15 +2,12 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*.*.*'
+    branches:
+      - main
 
 permissions:
   contents: write
-
-concurrency:
-  group: release-${{ github.ref_name }}
-  cancel-in-progress: false
+  actions: read
 
 jobs:
   release:
@@ -24,23 +21,66 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Wait for older release runs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          while true; do
+            older_runs="$(
+              gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/release.yml/runs?branch=main&event=push&per_page=100" \
+                --jq '.workflow_runs[] | select(.id < '"${GITHUB_RUN_ID}"' and .status != "completed") | .id'
+            )"
+            if [ -z "${older_runs}" ]; then
+              break
+            fi
+            echo "Waiting for older release runs to finish:"
+            printf '%s\n' "${older_runs}"
+            sleep 15
+          done
+
       - name: Set up Go
         uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: Validate release tag
+      - name: Resolve release metadata
         id: version
         run: |
           set -euo pipefail
-          VERSION="${GITHUB_REF_NAME}"
+
+          stdout_file="$(mktemp)"
+          stderr_file="$(mktemp)"
+
+          set +e
+          go run ./scripts/nextversion --bump minor >"${stdout_file}" 2>"${stderr_file}"
+          status=$?
+          set -e
+
+          cat "${stderr_file}" >&2
+          VERSION="$(tr -d '\n' < "${stdout_file}")"
+
           if ! [[ "${VERSION}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "::error::release workflow requires a stable semver tag like v1.2.3, got ${VERSION}"
             exit 1
           fi
+
+          case "${status}" in
+            0)
+              echo "already_released=false" >> "${GITHUB_OUTPUT}"
+              echo "Preparing new main release ${VERSION}"
+              ;;
+            2)
+              echo "already_released=true" >> "${GITHUB_OUTPUT}"
+              echo "Commit already released by tag ${VERSION}; refreshing release assets if needed."
+              ;;
+            *)
+              exit "${status}"
+              ;;
+          esac
+
           printf 'version=%s\n' "${VERSION}" >> "${GITHUB_OUTPUT}"
-          echo "Preparing tagged release ${VERSION}"
 
       - name: Run test suite
         run: go test ./...
@@ -98,10 +138,19 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           VERSION: ${{ steps.version.outputs.version }}
+          ALREADY_RELEASED: ${{ steps.version.outputs.already_released }}
         run: |
           set -euo pipefail
           if gh release view "${VERSION}" >/dev/null 2>&1; then
+            echo "Refreshing existing GitHub release ${VERSION}"
             gh release upload "${VERSION}" dist/ds_* --clobber
             exit 0
           fi
+
+          if [ "${ALREADY_RELEASED}" = "true" ]; then
+            echo "GitHub release for already-tagged version ${VERSION} is missing; recreating it."
+          else
+            echo "Publishing new GitHub release ${VERSION}"
+          fi
+
           gh release create "${VERSION}" dist/ds_* --title "${VERSION}" --generate-notes --target "${GITHUB_SHA}"

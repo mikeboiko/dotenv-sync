@@ -10,7 +10,7 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 	scriptPath := "./scripts/nextversion"
 	moduleRoot := repoRoot(t)
 
-	t.Run("patch baseline with no tags", func(t *testing.T) {
+	t.Run("minor baseline with no tags", func(t *testing.T) {
 		project := t.TempDir()
 		initGitRepo(t, project)
 		writeFile(t, filepath.Join(project, "README.md"), "release tests\n")
@@ -20,12 +20,12 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 		if code != 0 || stderr != "" {
 			t.Fatalf("nextversion patch failed: code=%d stderr=%q", code, stderr)
 		}
-		if strings.TrimSpace(stdout) != "v0.0.1" {
-			t.Fatalf("patch baseline = %q", stdout)
+		if strings.TrimSpace(stdout) != "v0.1.0" {
+			t.Fatalf("minor baseline = %q", stdout)
 		}
 	})
 
-	t.Run("successive main pushes advance patch versions", func(t *testing.T) {
+	t.Run("successive main pushes advance minor versions", func(t *testing.T) {
 		expected := readReleaseFixtureLines(t, "concurrent-main-push.txt")
 		project := t.TempDir()
 		initGitRepo(t, project)
@@ -39,10 +39,10 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 		commitAll(t, project, "release 1")
 		stdout, stderr, code := runGoMain(t, moduleRoot, scriptPath, "--dir", project)
 		if code != 0 || stderr != "" {
-			t.Fatalf("nextversion first patch failed: code=%d stderr=%q", code, stderr)
+			t.Fatalf("nextversion first minor failed: code=%d stderr=%q", code, stderr)
 		}
 		if strings.TrimSpace(stdout) != expected[0] {
-			t.Fatalf("first patch preview = %q", stdout)
+			t.Fatalf("first minor preview = %q", stdout)
 		}
 		if _, stderr, code := runCommand(t, project, "git", "tag", expected[0]); code != 0 {
 			t.Fatalf("tag %s failed: %s", expected[0], stderr)
@@ -52,10 +52,10 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 		commitAll(t, project, "release 2")
 		stdout, stderr, code = runGoMain(t, moduleRoot, scriptPath, "--dir", project)
 		if code != 0 || stderr != "" {
-			t.Fatalf("nextversion second patch failed: code=%d stderr=%q", code, stderr)
+			t.Fatalf("nextversion second minor failed: code=%d stderr=%q", code, stderr)
 		}
 		if strings.TrimSpace(stdout) != expected[1] {
-			t.Fatalf("second patch preview = %q", stdout)
+			t.Fatalf("second minor preview = %q", stdout)
 		}
 	})
 
@@ -102,7 +102,7 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 		if code != 0 || stderr != "" {
 			t.Fatalf("non-semver preview failed: code=%d stderr=%q", code, stderr)
 		}
-		if strings.TrimSpace(stdout) != "v0.4.3" {
+		if strings.TrimSpace(stdout) != "v0.5.0" {
 			t.Fatalf("non-semver preview = %q", stdout)
 		}
 	})
@@ -136,8 +136,8 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 		}
 		writeFile(t, filepath.Join(project, "side.txt"), "side release\n")
 		commitAll(t, project, "side release")
-		if _, stderr, code := runCommand(t, project, "git", "tag", "v0.4.3"); code != 0 {
-			t.Fatalf("tag v0.4.3 failed: %s", stderr)
+		if _, stderr, code := runCommand(t, project, "git", "tag", "v0.5.0"); code != 0 {
+			t.Fatalf("tag v0.5.0 failed: %s", stderr)
 		}
 
 		if _, stderr, code := runCommand(t, project, "git", "switch", "main"); code != 0 {
@@ -153,7 +153,7 @@ func TestReleaseWorkflowIntegration(t *testing.T) {
 		if strings.TrimSpace(stdout) != "" {
 			t.Fatalf("unexpected stdout: %q", stdout)
 		}
-		if !strings.Contains(stderr, "next release tag v0.4.3 already exists") {
+		if !strings.Contains(stderr, "next release tag v0.5.0 already exists") {
 			t.Fatalf("unexpected stderr: %q", stderr)
 		}
 	})

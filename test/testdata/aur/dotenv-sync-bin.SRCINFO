@@ -1,5 +1,5 @@
 pkgbase = dotenv-sync-bin
-	pkgdesc = Keep .env files in sync with .env.example and Bitwarden secrets
+	pkgdesc = Keep .env files in sync with .env.example and provider-managed secrets
 	pkgver = 1.2.3
 	pkgrel = 1
 	url = https://github.com/mikeboiko/dotenv-sync

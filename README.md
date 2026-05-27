@@ -2,8 +2,9 @@
 
 `dotenv-sync` is a cross-platform Go CLI for keeping a local `.env` file aligned
 with a schema in `.env.example` while resolving provider-managed values through
-a secret provider. Supported providers are **Bitwarden** (via the `rbw` CLI) and
-**KeePass** (via `keepassxc-cli`). The default provider is Bitwarden.
+a secret provider. Built-in providers currently include **Bitwarden** (via the
+`rbw` CLI) and **KeePass** (via `keepassxc-cli`), with room for additional
+providers over time. Bitwarden remains the default provider.
 
 The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 
@@ -11,6 +12,7 @@ The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 
 - `ds sync` writes `.env` from `.env.example` and your secret provider
 - `ds push` uploads the current `.env` into a repo-scoped Bitwarden item
+  (**Bitwarden-only for now**)
 - `ds diff` previews drift without writing files
 - `ds validate` reports malformed files, drift, duplicates, and missing secrets
 - `ds doctor` checks config and provider readiness
@@ -176,14 +178,16 @@ secret value. Defaults to `dotenv` if omitted.
 Blank values in `.env.example` are treated as provider-managed secrets. Literal
 values are treated as safe defaults and copied into `.env`.
 
-If `item_name` is omitted, `ds` derives it from the Git repository root
-directory name and falls back to the current working directory name when Git
-metadata is unavailable. By default, provider-managed keys resolve as
-`rbw get <item_name> --field <ENV_VAR>`, and `mapping` overrides only the field
-name inside that Bitwarden item.
+### Bitwarden-specific options
 
-`storage_mode` defaults to `fields` for backward-compatible reads from the
-repo-scoped Bitwarden item fields. In `fields` mode, `ds push` can update
+For Bitwarden, if `item_name` is omitted, `ds` derives it from the Git
+repository root directory name and falls back to the current working directory
+name when Git metadata is unavailable. By default, Bitwarden-managed keys
+resolve as `rbw get <item_name> --field <ENV_VAR>`, and `mapping` overrides
+only the field name inside that Bitwarden item.
+
+Bitwarden `storage_mode` defaults to `fields` for backward-compatible reads
+from the repo-scoped item fields. In `fields` mode, `ds push` can update
 provider-managed keys that map to Bitwarden's built-in `password` field. Set
 `storage_mode: note_json` to store the full repo env map in the item notes for
 round-trip `push`/`sync` workflows.
@@ -229,6 +233,7 @@ ds push --dry-run
 ds push
 ```
 
+- Bitwarden-only for now; other providers may add write support later
 - Requires `storage_mode: note_json`
 - Reads `.env` as the upload source and `.env.example` as schema context
 - In `note_json`, writes a deterministic JSON payload into the repo-scoped
@@ -355,7 +360,7 @@ go test ./... -bench . -run '^$'
 
 ## Build a local versioned binary
 
-Preview the next patch tag from the current reachable semver tags:
+Preview the next minor tag from the current reachable semver tags:
 
 ```bash
 go run ./scripts/nextversion
@@ -364,12 +369,13 @@ go run ./scripts/nextversion
 Example outputs:
 
 ```text
-v0.0.1
-v0.4.3
+v0.1.0
+v0.5.0
 ```
 
-`scripts/nextversion` is only a local helper. GitHub releases are created from
-explicit semver tags, not from every push to `main`.
+`scripts/nextversion` is a local preview helper for the same automatic release
+logic used in CI. By default it predicts the next **minor** release from the
+current reachable semver tags.
 
 Then build a local binary with that predicted release metadata:
 
@@ -400,24 +406,26 @@ To install straight into `~/.local/bin/ds` with Git-derived version metadata:
 GitHub Actions runs `go test ./...` on every push, pull request, and manual
 dispatch via `.github/workflows/go-tests.yml`.
 
-To publish a release, push a stable semver tag:
+Every push to `main` now drives release automation automatically:
 
 ```bash
-VERSION=$(go run ./scripts/nextversion)
-git tag -a "${VERSION}" -m "Release ${VERSION}"
-git push origin "${VERSION}"
+git switch main
+git pull --ff-only
+git push origin main
 ```
 
-`.github/workflows/release.yml` runs on semver tag pushes, reruns
-`go test ./...`, builds versioned archives for Linux, macOS, and Windows,
-bundles `README.md` and `LICENSE` into the release archives, writes
-`ds_<version>_SHA256SUMS`, verifies the Linux reference artifact with
-`ds --version`, and then creates or refreshes the matching GitHub release.
+`.github/workflows/release.yml` runs on pushes to `main`, calculates the next
+minor version, reruns `go test ./...`, builds versioned archives for Linux,
+macOS, and Windows, bundles `README.md` and `LICENSE` into the release
+archives, writes `ds_<version>_SHA256SUMS`, verifies the Linux reference
+artifact with `ds --version`, and then creates or refreshes the matching GitHub
+release.
 
 If `AUR_SSH_PRIVATE_KEY` is configured, `.github/workflows/aur-publish.yml`
-also updates the `dotenv-sync-bin` AUR package from the published Linux release
-artifacts. The AUR package installs the `ds` executable even though the package
-name is `dotenv-sync-bin`.
+then updates the `dotenv-sync-bin` AUR package from the published Linux release
+artifacts. This downstream `release.published` pattern is also the intended hook
+point for future package-manager publishers. The AUR package installs the `ds`
+executable even though the package name is `dotenv-sync-bin`.
 
 If you need an AUR-only packaging fix without a new upstream release tag, rerun
 `go run ./scripts/aurpkg` against the existing tag with a higher `--pkgrel`

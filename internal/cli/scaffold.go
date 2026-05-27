@@ -32,7 +32,7 @@ Only supported when provider is keepass.`,
 			if cfg.Provider != "keepass" {
 				return report.NewAppError("E007", report.ExitOperational,
 					"scaffold requires provider: keepass",
-					"scaffold cannot create entries in Bitwarden via this command",
+					"scaffold cannot create entries for providers other than KeePass",
 					"set provider: keepass in .envsync.yaml and retry", nil)
 			}
 

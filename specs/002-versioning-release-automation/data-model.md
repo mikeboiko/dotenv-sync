@@ -1,4 +1,4 @@
-# Data Model: Automatic patch release automation
+# Data Model: Automatic minor release automation
 
 ## Release Trigger
 
@@ -23,7 +23,7 @@
   publication.
 - **Fields**:
   - `previous_version`: latest reachable semver tag or `v0.0.0`
-  - `next_version`: computed patch version to publish
+  - `next_version`: computed minor version to publish
   - `commit`: commit SHA included in the release build
   - `status`: enum such as `planned`, `validated`, `built`, `published`,
     `skipped`, or `failed`
@@ -35,8 +35,8 @@
   - a single `commit` may have at most one `published` release
   - `skip_reason` is required when `status` is `skipped`
   - if a semver tag already points at `commit`, the workflow treats the
-    publication as `skipped` even when a GitHub release record needs manual
-    repair
+    publication as a rerun/repair path for the same version rather than
+    calculating a new one
 
 ## Release Artifact
 
@@ -69,6 +69,8 @@
 
 - One **Release Trigger** produces zero or one **Release Publication**.
 - One **Release Publication** may contain many **Release Artifacts**.
+- One published **Release Publication** may trigger zero or more downstream
+  package-manager publication workflows.
 - One published **Release Publication** must correspond to exactly one `main`
   commit.
 - Every published **Release Artifact** must embed the **Version Metadata** of its

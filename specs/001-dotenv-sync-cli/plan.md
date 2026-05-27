@@ -9,23 +9,22 @@ Build `dotenv-sync` as a cross-platform Go CLI that ships the short default
 executable name `ds`, keeps `.env.example` as the schema contract, and
 produces trustworthy local `.env` files without changing the standard
 developer workflow. The MVP uses Cobra-based commands, a
-fidelity-preserving envfile parser and writer, a Bitwarden provider adapter
-backed by the `rbw` CLI, and shared reporting and redaction utilities so
-sync, diff, validate, doctor, init, missing, and reverse-sync behaviors stay
-consistent across Linux, macOS, and Windows. By default, provider-backed
-lookups resolve from one Bitwarden item per repository, using the repository
-name as the item name and each environment variable as a field on that item,
-with config overrides for custom item or field names. Future roadmap work may
-add compatibility with the official `bw` CLI as an alternate Bitwarden
-client.
+fidelity-preserving envfile parser and writer, provider adapters behind a
+shared interface, and reporting and redaction utilities so sync, diff,
+validate, doctor, init, missing, and reverse-sync behaviors stay consistent
+across Linux, macOS, and Windows. Built-in providers currently include
+Bitwarden through `rbw` and KeePass through `keepassxc-cli`, with room for
+additional providers and alternate clients over time. Bitwarden keeps the
+repo-scoped item flow for reads, with config overrides for custom item or
+field names where that addressing model applies.
 
 ## Technical Context
 
 **Language/Version**: Go 1.22  
 **Primary Dependencies**: `github.com/spf13/cobra` for CLI routing,
 `gopkg.in/yaml.v3` for optional `.envsync.yaml` config, Go standard library
-for file I/O, JSON parsing, process execution, and testing, plus the `rbw`
-CLI as the Bitwarden runtime prerequisite  
+for file I/O, JSON parsing, process execution, and testing, plus provider CLIs
+such as `rbw` and `keepassxc-cli` when the selected adapter requires them  
 **Storage**: Local files only (`.env.example`, `.env`, `.envsync.yaml`)  
 **Testing**: `go test`, table-driven unit tests, golden-file tests,
 subprocess-based CLI integration tests, benchmark tests for sync, diff, and
@@ -37,19 +36,19 @@ validate hot paths
 validate with at most one provider lookup per distinct key per command  
 **Constraints**: No runtime command wrapping, deterministic file rewrites
 with comment, order, and line-ending preservation, secret-safe output,
-minimal runtime dependencies, Bitwarden access through `rbw` in the MVP,
-default executable name `ds`, repo-scoped default Bitwarden item naming,
-cross-platform path and process handling, CI-friendly exit codes  
+minimal runtime dependencies, default executable name `ds`, provider adapters
+isolated behind a shared interface, repo-scoped default Bitwarden item naming
+where applicable, cross-platform path and process handling, CI-friendly exit
+codes  
 **Scale/Scope**: One project directory per invocation, up to 500 keys per
-schema, one provider shipping initially, local developer and CI workflows
-only for MVP
+schema, local developer and CI workflows only for MVP
 
 ## Constitution Check
 
 _GATE: Must pass before Phase 0 research. Re-check after Phase 1 design._
 
 Pre-design review passes from the accepted spec, the explicit cross-platform
-Go requirement, the `rbw` provider constraint, and the short default binary
+Go requirement, the provider-adapter constraint, and the short default binary
 naming requirement. Post-design re-check also passes after the updated
 research, data model, quickstart, and contract artifacts below were produced.
 
@@ -109,10 +108,13 @@ internal/
 │   └── atomic.go
 ├── provider/
 │   ├── provider.go
-│   └── bitwarden/
+│   ├── bitwarden/
+│   │   ├── adapter.go
+│   │   ├── rbw_client.go
+│   │   └── status.go
+│   └── keepass/
 │       ├── adapter.go
-│       ├── rbw_client.go
-│       └── status.go
+│       └── kpxc_client.go
 ├── report/
 │   ├── output.go
 │   ├── redact.go
@@ -143,7 +145,7 @@ builds the `ds` executable while retaining the `dotenv-sync` product name.
 Internal packages cover envfile fidelity, provider adapters, orchestration,
 reporting, and configuration. This keeps the cross-platform binary cohesive,
 aligns with the user's recommended Go layout, and preserves a clean path for
-future `bw` compatibility without complicating the MVP.
+future providers or alternate Bitwarden clients without complicating the MVP.
 
 ## Complexity Tracking
 

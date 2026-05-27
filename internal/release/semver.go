@@ -63,6 +63,10 @@ func NextPatchVersion(currentTag string) (string, error) {
 	return NextVersion(currentTag, "patch")
 }
 
+func NextMinorVersion(currentTag string) (string, error) {
+	return NextVersion(currentTag, "minor")
+}
+
 func AssetName(version, goos, goarch string) string {
 	if goos == "windows" {
 		return fmt.Sprintf("ds_%s_windows_%s.zip", version, goarch)
@@ -115,6 +119,16 @@ func NextPatchVersionForRepo(ctx context.Context, dir string) (string, error) {
 		current = latest
 	}
 	return NextPatchVersion(current)
+}
+
+func NextMinorVersionForRepo(ctx context.Context, dir string) (string, error) {
+	current := BaselineVersion
+	if latest, ok, err := LatestVersionFromRepo(ctx, dir); err != nil {
+		return "", err
+	} else if ok {
+		current = latest
+	}
+	return NextMinorVersion(current)
 }
 
 func NextVersionForRepo(ctx context.Context, dir, bump string) (string, error) {

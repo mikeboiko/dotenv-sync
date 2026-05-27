@@ -3,7 +3,7 @@
 **Feature Branch**: `001-dotenv-sync-cli`
 **Created**: 2026-03-07
 **Status**: Draft
-**Input**: User description: "Build a CLI application that synchronizes a project's `.env` from `.env.example` using Bitwarden as the secret source through the `rbw` CLI, while preserving the standard developer workflow, shipping `ds` as the default binary name, and providing sync, diff, validate, doctor, init, and schema-maintenance flows."
+**Input**: User description: "Build a CLI application that synchronizes a project's `.env` from `.env.example` using a secret provider, while preserving the standard developer workflow, shipping `ds` as the default binary name, and providing sync, diff, validate, doctor, init, and schema-maintenance flows."
 
 ## User Scenarios & Testing _(mandatory)_
 
@@ -17,10 +17,10 @@ workflow.
 **Why this priority**: This is the core product promise and the minimum outcome
 that makes the tool valuable on day one.
 
-**Independent Test**: In a project with a valid `.env.example`, Bitwarden
-secrets reachable through `rbw`, and no existing `.env`, a user can run the
-sync flow once and receive a usable `.env` file without wrapping any later
-application commands.
+**Independent Test**: In a project with a valid `.env.example`, a configured
+provider that can resolve the required secrets, and no existing `.env`, a user
+can run the sync flow once and receive a usable `.env` file without wrapping
+any later application commands.
 
 **Acceptance Scenarios**:
 
@@ -84,9 +84,10 @@ clear diagnostic result.
 1. **Given** a project has a populated `.env` but no `.env.example`, **When**
    the maintainer runs init, **Then** the tool generates a schema file that
    keeps safe explicit defaults and strips secret values to blank placeholders.
-2. **Given** the provider CLI is missing, the user is logged out, or the vault
-   is locked, **When** the maintainer runs doctor, **Then** the tool identifies
-   each failed prerequisite and the next action required to fix it.
+2. **Given** the provider CLI is missing, the provider session is unavailable,
+   or the configured data source is locked or unreadable, **When** the
+   maintainer runs doctor, **Then** the tool identifies each failed
+   prerequisite and the next action required to fix it.
 3. **Given** `.env` contains additional keys that are not yet in
    `.env.example`, **When** the maintainer runs the opt-in reverse-sync flow,
    **Then** the tool adds those keys to `.env.example` as blank placeholders
@@ -117,9 +118,9 @@ clear diagnostic result.
   explicit values represent safe defaults that may be copied as written.
 - Reverse sync is opt-in and is limited to adding blank placeholders for new
   keys discovered in `.env`.
-- Bitwarden is the initial provider available out of the box through the
-  `rbw` CLI, and future providers will be added without changing the standard
-  `.env` workflow.
+- Built-in providers currently include Bitwarden through the `rbw` CLI and
+  KeePass through `keepassxc-cli`, and future providers can be added without
+  changing the standard `.env` workflow.
 
 ## User Experience Consistency _(mandatory)_
 
@@ -145,9 +146,10 @@ clear diagnostic result.
 - **FR-003**: Users MUST be able to produce a usable local `.env` without
   wrapping their normal application commands or changing how tools already load
   `.env` files.
-- **FR-004**: The system MUST support Bitwarden as the initial secret source
-  through the `rbw` CLI and MUST verify prerequisite states required to
-  retrieve secrets.
+- **FR-004**: The system MUST support multiple secret providers behind a shared
+  interface, including Bitwarden through the `rbw` CLI and KeePass through
+  `keepassxc-cli`, and MUST verify the provider-specific prerequisite states
+  required to retrieve secrets.
 - **FR-005**: The system MUST provide a dry-run preview before writing changes
   so users can understand what will happen in advance.
 - **FR-006**: The system MUST provide diff and validate flows that identify
@@ -157,10 +159,12 @@ clear diagnostic result.
   lines when rewriting `.env` or `.env.example` wherever the source format
   allows.
 - **FR-008**: The system MUST provide a diagnostic flow that reports missing
-  provider CLI installation, logged-out sessions, locked vaults, and other
+  provider CLI installation, provider-specific access failures such as logged-
+  out sessions or unreadable databases, locked vaults or databases, and other
   prerequisite failures with actionable recovery guidance.
-- **FR-009**: The system MUST support configurable key mapping so a schema key
-  can resolve from a differently named provider record when teams need it.
+- **FR-009**: The system MUST support configurable lookup mapping for providers
+  that use alternate field or record names so a schema key can resolve from a
+  differently named provider entry when teams need it.
 - **FR-010**: The system MUST provide an opt-in reverse-sync flow that adds new
   keys from `.env` back into `.env.example` as blank placeholders only.
 - **FR-011**: The system MUST provide an init flow that can generate
@@ -185,7 +189,7 @@ clear diagnostic result.
   resolved values and defaults consumed by frameworks, tools, and editors.
 - **Secret Resolution Record**: The outcome of attempting to satisfy a schema
   entry, including whether the value came from a static default, a provider
-  mapping, or remains unresolved.
+  lookup reference, or remains unresolved.
 - **Provider Readiness State**: The current availability of the configured
   secret source, including whether required tooling is installed, authenticated,
   and unlocked.
@@ -221,5 +225,5 @@ clear diagnostic result.
 
 ## Future Roadmap
 
-- Add support for the official `bw` CLI as an alternate Bitwarden integration
-  path after the `rbw`-backed MVP is established.
+- Add alternate clients for existing providers, and new providers, behind the
+  shared provider interface without changing the standard `.env` workflow.

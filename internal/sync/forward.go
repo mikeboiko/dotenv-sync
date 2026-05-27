@@ -61,7 +61,7 @@ func PlanForwardDocs(ctx context.Context, cfg config.Config, schema, local envfi
 		if errors.As(err, &appErr) {
 			return plan, envfile.Document{}, err
 		}
-		return plan, envfile.Document{}, report.NewAppError("E003", report.ExitOperational, "provider resolution failed", "sync cannot resolve provider-managed schema keys", "check rbw and retry", err)
+		return plan, envfile.Document{}, report.NewAppError("E003", report.ExitOperational, "provider resolution failed", "sync cannot resolve provider-managed schema keys", "check the configured provider and retry", err)
 	}
 	for key, res := range providerResults {
 		resolutions[key] = res

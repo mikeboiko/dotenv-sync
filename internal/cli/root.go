@@ -25,8 +25,8 @@ var providerFactory = func(cfg config.Config) provider.Provider {
 }
 
 var pushProviderFactory = func(cfg config.Config) provider.PushProvider {
-	// KeePass does not yet implement PushProvider (ds push is Bitwarden-only for now).
-	// All push operations fall through to Bitwarden regardless of config.
+	// Keep the Bitwarden adapter on the push path for the providers that support
+	// write-back. The push command rejects providers without write support.
 	return bitwarden.NewAdapter(cfg)
 }
 
@@ -63,7 +63,7 @@ func NewRootCommand(s streams) *cobra.Command {
 	opts := &rootOptions{}
 	cmd := &cobra.Command{
 		Use:   "ds",
-		Short: "Sync .env files from .env.example and rbw",
+		Short: "Sync .env files from .env.example and secret providers",
 	}
 	cmd.SetOut(s.stdout)
 	cmd.SetErr(s.stderr)

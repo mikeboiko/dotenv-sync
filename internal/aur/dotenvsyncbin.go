@@ -10,7 +10,7 @@ import (
 
 const (
 	dotenvSyncBinPackageName = "dotenv-sync-bin"
-	dotenvSyncDescription    = "Keep .env files in sync with .env.example and Bitwarden secrets"
+	dotenvSyncDescription    = "Keep .env files in sync with .env.example and provider-managed secrets"
 	dotenvSyncURL            = "https://github.com/mikeboiko/dotenv-sync"
 	dotenvSyncRawURL         = "https://raw.githubusercontent.com/mikeboiko/dotenv-sync"
 )

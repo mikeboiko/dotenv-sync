@@ -13,7 +13,7 @@ func newPushCommand(s streams, opts *rootOptions) *cobra.Command {
 	var dryRun bool
 	cmd := &cobra.Command{
 		Use:   "push",
-		Short: "Upload the current .env into Bitwarden",
+		Short: "Upload the current .env into the provider payload (Bitwarden-only)",
 		Args:  cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			cfg, err := loadConfig(opts)
@@ -61,6 +61,6 @@ func newPushCommand(s streams, opts *rootOptions) *cobra.Command {
 			return nil
 		},
 	}
-	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "preview without writing to Bitwarden")
+	cmd.Flags().BoolVar(&dryRun, "dry-run", false, "preview without writing to the provider payload")
 	return cmd
 }
