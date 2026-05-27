@@ -20,6 +20,8 @@ provider-managed key (blank value in .env.example) that does not already exist
 in the configured group. Existing entries are skipped, never overwritten.
 
 After scaffold, open KeePassXC, fill in the real secret values, then run ds sync.
+This bootstraps the entry structure only — it does not push current .env values
+back into KeePass.
 
 Only supported when provider is keepass.`,
 		RunE: func(cmd *cobra.Command, args []string) error {

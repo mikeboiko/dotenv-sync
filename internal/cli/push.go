@@ -24,7 +24,7 @@ func newPushCommand(s streams, opts *rootOptions) *cobra.Command {
 				return report.NewAppError("E008", report.ExitOperational,
 					"push is not supported for the keepass provider",
 					"ds push writes secrets to Bitwarden — it cannot write to a KeePass database",
-					"use KeePassXC to edit secrets directly, then run ds sync", nil)
+					"use 'ds scaffold' only for initial blank entries, then edit secrets in KeePassXC and run ds sync", nil)
 			}
 			prov := pushProviderFor(cfg)
 			plan, target, err := syncpkg.PlanPush(cmd.Context(), cfg, prov)

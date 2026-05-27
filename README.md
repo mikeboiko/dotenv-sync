@@ -13,8 +13,8 @@ providers over time.
 - Detect drift, malformed files, duplicates, and missing secrets before they
   break teammates or CI
 - Bootstrap `.env.example` from an existing `.env`
-- Push local env changes back to Bitwarden when you want a round-trip workflow
-  (**Bitwarden-only for now**)
+- Use `ds push` for Bitwarden round-trip write-back workflows
+- Use `ds scaffold` to bootstrap blank KeePass entries from `.env.example`
 
 ## Quick start
 
@@ -84,18 +84,25 @@ ds missing
 
 ## Command overview
 
-| Command                       | What it is for                                                    |
-| ----------------------------- | ----------------------------------------------------------------- |
-| `ds sync`                     | Create or update `.env` from `.env.example` and your provider     |
-| `ds doctor`                   | Check config and provider readiness before syncing                |
-| `ds diff`                     | Preview redacted drift without writing files                      |
-| `ds validate`                 | Fail on malformed files, drift, duplicates, or unresolved secrets |
-| `ds missing`                  | List unresolved provider-backed keys                              |
-| `ds init`                     | Create `.env.example` from an existing `.env`                     |
-| `ds reverse`                  | Add new keys from `.env` back into `.env.example` as blanks       |
-| `ds push`                     | Upload `.env` back into Bitwarden (**Bitwarden-only**)            |
-| `ds scaffold`                 | Seed KeePass entries from `.env.example` (**KeePass-only**)       |
-| `ds --version` / `ds version` | Show build and release metadata                                   |
+| Command                       | What it is for                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------- |
+| `ds sync`                     | Create or update `.env` from `.env.example` and your provider                       |
+| `ds doctor`                   | Check config and provider readiness before syncing                                  |
+| `ds diff`                     | Preview redacted drift without writing files                                        |
+| `ds validate`                 | Fail on malformed files, drift, duplicates, or unresolved secrets                   |
+| `ds missing`                  | List unresolved provider-backed keys                                                |
+| `ds init`                     | Create `.env.example` from an existing `.env`                                       |
+| `ds reverse`                  | Add new keys from `.env` back into `.env.example` as blanks                         |
+| `ds push`                     | Upload `.env` back into Bitwarden (**Bitwarden-only**)                              |
+| `ds scaffold`                 | Seed blank KeePass entries from `.env.example` for initial setup (**KeePass-only**) |
+| `ds --version` / `ds version` | Show build and release metadata                                                     |
+
+## Provider write-back support today
+
+| Provider  | What `ds` can write today                                                                                                        | Recommended workflow                                                                                                              |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Bitwarden | `ds push` can write `.env` changes back to the provider                                                                          | Use `ds sync` to pull secrets and `ds push` when you want a round-trip workflow                                                   |
+| KeePass   | `ds scaffold` can create missing blank entries from `.env.example`, but it does **not** update existing entry values from `.env` | Run `ds scaffold` once to bootstrap the vault structure, then edit secret values in KeePassXC and use `ds sync` to read them back |
 
 ## Configuration
 
@@ -264,6 +271,10 @@ writes to arbitrary custom Bitwarden fields. If a repo maps pushed keys to
 custom fields, `ds push` fails with actionable guidance to use `password` or
 switch to `storage_mode: note_json`.
 
+KeePass does **not** use `ds push` today. Its nearest equivalent is
+`ds scaffold`, but that command only creates missing blank entries during
+initial setup; it does not write current `.env` values back into KeePass.
+
 ### `ds diff`
 
 ```bash
@@ -320,6 +331,10 @@ ds scaffold --dry-run
 Seeds a KeePass vault with blank entries for every provider-managed key in
 `.env.example`. Existing entries are skipped — never overwritten. Only
 supported when `provider: keepass`.
+
+This is a bootstrap step, not a KeePass version of `ds push`: it creates the
+entry structure, but it does not update existing KeePass entry values from
+`.env`.
 
 This is a **dev lead tool** for the recommended KeePass team workflow:
 
