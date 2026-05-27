@@ -9,16 +9,24 @@ import (
 	"dotenv-sync/internal/config"
 	"dotenv-sync/internal/provider"
 	"dotenv-sync/internal/provider/bitwarden"
+	"dotenv-sync/internal/provider/keepass"
 	"dotenv-sync/internal/report"
 	"dotenv-sync/pkg/dotenvsync"
 	"github.com/spf13/cobra"
 )
 
 var providerFactory = func(cfg config.Config) provider.Provider {
-	return bitwarden.NewAdapter(cfg)
+	switch cfg.Provider {
+	case "keepass":
+		return keepass.NewAdapter(cfg)
+	default:
+		return bitwarden.NewAdapter(cfg)
+	}
 }
 
 var pushProviderFactory = func(cfg config.Config) provider.PushProvider {
+	// KeePass does not yet implement PushProvider (ds push is Bitwarden-only for now).
+	// All push operations fall through to Bitwarden regardless of config.
 	return bitwarden.NewAdapter(cfg)
 }
 
@@ -74,6 +82,7 @@ func NewRootCommand(s streams) *cobra.Command {
 	cmd.AddCommand(newInitCommand(s, opts))
 	cmd.AddCommand(newMissingCommand(s, opts))
 	cmd.AddCommand(newReverseCommand(s, opts))
+	cmd.AddCommand(newScaffoldCommand(s, opts))
 	return cmd
 }
 

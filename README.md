@@ -2,18 +2,19 @@
 
 `dotenv-sync` is a cross-platform Go CLI for keeping a local `.env` file aligned
 with a schema in `.env.example` while resolving provider-managed values through
-Bitwarden's `rbw` CLI.
+a secret provider. Supported providers are **Bitwarden** (via the `rbw` CLI) and
+**KeePass** (via `keepassxc-cli`). The default provider is Bitwarden.
 
 The product name stays **dotenv-sync** and the default binary name is **`ds`**.
 
 ## Features
 
-- `ds sync` writes `.env` from `.env.example` and `rbw`
+- `ds sync` writes `.env` from `.env.example` and your secret provider
 - `ds push` uploads the current `.env` into a repo-scoped Bitwarden item
 - `ds diff` previews drift without writing files
 - `ds validate` reports malformed files, drift, duplicates, and missing secrets
-- `ds doctor` checks config and `rbw` readiness
-- `ds init` bootstraps `.env.example` from `.env`
+- `ds doctor` checks config and provider readiness
+- `ds init` bootstraps `.env.example` from `.env`, with first-run provider setup
 - `ds missing` lists unresolved provider-backed keys
 - `ds reverse` adds missing schema placeholders back into `.env.example`
 - `ds --version` and `ds version` report build and release metadata
@@ -137,7 +138,10 @@ install -Dm755 ./bin/ds ~/.local/bin/ds
 
 ## Configuration
 
-`.envsync.yaml` is optional:
+`.envsync.yaml` is optional. Running `ds init` or `ds scaffold` with no config
+present will walk you through first-run setup and write it for you.
+
+### Bitwarden
 
 ```yaml
 provider: bitwarden
@@ -149,6 +153,25 @@ mapping:
   DATABASE_URL: db_url
   JWT_SECRET: auth_jwt
 ```
+
+### KeePass
+
+```yaml
+provider: keepass
+schema_file: .env.example
+env_file: .env
+keepass_database: /path/to/secrets.kdbx
+keepass_group: dotenv
+```
+
+`keepass_database` is the path to your `.kdbx` file (absolute or relative to the
+project root). `keepass_group` is the group inside the vault that holds env var
+entries — each entry's title is the key name and its password field is the
+secret value. Defaults to `dotenv` if omitted.
+
+`.kdbx` files are automatically ignored by the bundled `.gitignore` entry.
+
+### General
 
 Blank values in `.env.example` are treated as provider-managed secrets. Literal
 values are treated as safe defaults and copied into `.env`.
@@ -192,7 +215,7 @@ ds sync --dry-run
 ```
 
 - Reads `.env.example` as the schema contract
-- Resolves blank entries through `rbw` using a repo-scoped item by default
+- Resolves blank entries through the configured provider
 - Preserves comment order and line endings when rewriting `.env`
 - Produces `WRITTEN`, `UNCHANGED`, and `MISSING` output vocabulary for sync runs
 - On successful writes, prints the changed keys before the final summary without
@@ -244,8 +267,8 @@ secrets are found.
 ds doctor
 ```
 
-Checks `.envsync.yaml` readability and `rbw` readiness without printing any
-secret values.
+Checks `.envsync.yaml` readability and provider readiness without printing any
+secret values. Works for both Bitwarden and KeePass providers.
 
 ### `ds init`
 
@@ -257,9 +280,34 @@ ds init --dry-run
 Creates `.env.example` from `.env`, blanking secret-like values while copying
 safe defaults.
 
+If no `.envsync.yaml` exists and stdin is a terminal, `ds init` runs first-run
+setup — asking which provider to use and writing the config file before
+continuing. For KeePass, it verifies the database path and group exist before
+writing anything.
+
 If `.env` is malformed or contains duplicate keys, `ds init` returns a
 validation error with actionable diagnostics instead of silently generating a
 schema.
+
+### `ds scaffold`
+
+```bash
+ds scaffold
+ds scaffold --dry-run
+```
+
+Seeds a KeePass vault with blank entries for every provider-managed key in
+`.env.example`. Existing entries are skipped — never overwritten. Only
+supported when `provider: keepass`.
+
+This is a **dev lead tool** for the recommended KeePass team workflow:
+
+1. Design `.env.example` with blank values for all secrets
+2. Run `ds scaffold` — creates stub entries in the vault
+3. Open KeePassXC, fill in the real secret values
+4. Run `ds sync` to verify `.env` populates correctly
+5. Share the `.kdbx` file with team members via a secure channel
+6. Team members run `ds sync` and are ready to go
 
 ### `ds missing`
 

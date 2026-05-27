@@ -24,7 +24,7 @@ func newDoctorCommand(s streams, opts *rootOptions) *cobra.Command {
 			if status.Code != "" {
 				return report.NewAppError(status.Code, report.ExitOperational, status.Problem, status.Impact, status.Action, nil)
 			}
-			fmt.Fprintln(s.stdout, report.SummaryLine(report.StatusChecked, "provider", report.Summary{}, "rbw ready"))
+			fmt.Fprintln(s.stdout, report.SummaryLine(report.StatusChecked, "provider", report.Summary{}, status.Provider+" ready"))
 			return nil
 		},
 	}

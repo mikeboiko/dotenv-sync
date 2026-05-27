@@ -1,0 +1,5 @@
+provider: keepass
+schema_file: .env.example
+env_file: .env
+keepass_database: test-secrets.kdbx
+keepass_group: dotenv

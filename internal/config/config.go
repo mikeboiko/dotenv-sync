@@ -24,6 +24,10 @@ type Config struct {
 	Mapping     map[string]string `yaml:"mapping"`
 	ConfigFile  string            `yaml:"-"`
 	BaseDir     string            `yaml:"-"`
+
+	// KeePass-specific fields. Ignored when provider is "bitwarden".
+	KeePassDatabase string `yaml:"keepass_database"` // path to the .kdbx file
+	KeePassGroup    string `yaml:"keepass_group"`    // group inside the vault that holds env vars
 }
 
 type LoadOptions struct {
@@ -84,6 +88,15 @@ func Load(baseDir string, opts LoadOptions) (Config, error) {
 	}
 	if cfg.Mapping == nil {
 		cfg.Mapping = map[string]string{}
+	}
+	// Resolve the KeePass database path relative to the base directory,
+	// the same way schema_file and env_file are resolved.
+	if cfg.KeePassDatabase != "" {
+		cfg.KeePassDatabase = resolvePath(baseDir, cfg.KeePassDatabase)
+	}
+	// Default the KeePass group to "dotenv" if not specified.
+	if cfg.KeePassGroup == "" {
+		cfg.KeePassGroup = "dotenv"
 	}
 	if cfg.StorageMode != StorageModeFields && cfg.StorageMode != StorageModeNoteJSON {
 		return Config{}, fmt.Errorf("storage_mode must be %q or %q", StorageModeFields, StorageModeNoteJSON)

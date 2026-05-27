@@ -13,12 +13,17 @@ func newInitCommand(s streams, opts *rootOptions) *cobra.Command {
 	var dryRun bool
 	cmd := &cobra.Command{
 		Use:   "init",
-		Short: "Generate .env.example from .env",
+		Short: "Generate .env.example from .env, with first-run provider setup",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cfg, err := loadConfig(opts)
+			setupRan, cfg, _, err := ensureConfig(s, opts)
 			if err != nil {
 				return err
 			}
+			if setupRan {
+				fmt.Fprintln(s.stdout, "Run 'ds sync' to populate your .env file.")
+				return nil
+			}
+
 			plan, target, err := syncpkg.PlanInit(cfg)
 			for _, change := range plan.Changes {
 				fmt.Fprintln(s.stdout, report.ChangeLine(change.ChangeType, change.Key, change.After))
