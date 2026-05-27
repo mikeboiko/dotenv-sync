@@ -4,139 +4,98 @@
 with a schema in `.env.example` while resolving provider-managed values through
 a secret provider. Built-in providers currently include **Bitwarden** (via the
 `rbw` CLI) and **KeePass** (via `keepassxc-cli`), with room for additional
-providers over time. Bitwarden remains the default provider.
+providers over time.
 
-The product name stays **dotenv-sync** and the default binary name is **`ds`**.
+## What people usually use it for
 
-## Features
-
-- `ds sync` writes `.env` from `.env.example` and your secret provider
-- `ds push` uploads the current `.env` into a repo-scoped Bitwarden item
+- Keep `.env.example` as the committed schema for required environment variables
+- Fill local `.env` values from your configured secret provider
+- Detect drift, malformed files, duplicates, and missing secrets before they
+  break teammates or CI
+- Bootstrap `.env.example` from an existing `.env`
+- Push local env changes back to Bitwarden when you want a round-trip workflow
   (**Bitwarden-only for now**)
-- `ds diff` previews drift without writing files
-- `ds validate` reports malformed files, drift, duplicates, and missing secrets
-- `ds doctor` checks config and provider readiness
-- `ds init` bootstraps `.env.example` from `.env`, with first-run provider setup
-- `ds missing` lists unresolved provider-backed keys
-- `ds reverse` adds missing schema placeholders back into `.env.example`
-- `ds --version` and `ds version` report build and release metadata
 
-## Install and build
+## Quick start
 
-On Arch Linux, install the AUR package:
+Most people just need a schema, a provider config, and `ds sync`. The examples
+below assume `ds` is already installed and available; install/build options are
+further down.
+
+### 1. Define the schema in `.env.example`
+
+```dotenv
+# Application settings
+DATABASE_URL=
+JWT_SECRET=
+PORT=8080
+```
+
+Blank values are treated as provider-managed secrets. Literal values are treated
+as safe defaults and copied into `.env`.
+
+### 2. Point `ds` at your provider
+
+Bitwarden example:
+
+```yaml
+provider: bitwarden
+schema_file: .env.example
+env_file: .env
+item_name: my-app
+mapping:
+  DATABASE_URL: db_url
+  JWT_SECRET: auth_jwt
+```
+
+KeePass example:
+
+```yaml
+provider: keepass
+schema_file: .env.example
+env_file: .env
+keepass_database: /path/to/secrets.kdbx
+keepass_group: dotenv
+```
+
+### 3. Check readiness and write `.env`
 
 ```bash
-yay -S dotenv-sync-bin
+ds doctor
+ds sync
 ```
 
-That package installs the `ds` executable.
+That checks your provider prerequisites, then writes `.env` from
+`.env.example`, copying safe defaults and resolving blank values from your
+provider.
 
-Without an AUR helper:
+### 4. Inspect drift and unresolved values
 
 ```bash
-git clone https://aur.archlinux.org/dotenv-sync-bin.git
-cd dotenv-sync-bin
-makepkg -si
+ds diff
+ds validate
+ds missing
 ```
 
-To build from source locally:
+- `ds diff` previews real changes without writing files
+- `ds validate` is the CI-friendly check for malformed files, drift, duplicates,
+  and unresolved secrets
+- `ds missing` lists unresolved schema keys only
 
-```bash
-go build -o ./bin/ds ./cmd/ds
-```
+## Command overview
 
-Local development builds report `dev` metadata by default. Release builds inject
-their version, commit, and build time at build time instead of editing source
-files.
-
-## Keep `ds` up to date locally
-
-If you keep `ds` in `~/.local/bin/ds`, the simplest update flow is:
-
-```bash
-git switch main
-git pull --ff-only
-./scripts/install-local.sh
-```
-
-By default `./scripts/install-local.sh` installs to `~/.local/bin/ds`. You can
-override that with `--bin /custom/path/to/ds`.
-
-If you use this repository's `lefthook` setup, `lefthook install` also enables
-automatic local refreshes after `git commit` and `git merge` on the default
-branch. Those hooks call `./scripts/install-local.sh --quiet` through
-`./scripts/install-local-hook.sh`, and they intentionally skip non-default
-branches so feature work does not overwrite your globally installed `ds`.
-
-The script injects version metadata from your current checkout:
-
-- exact release tag checkout: `v0.4.0`
-- commits ahead of a release: `v0.4.0-3-gabc1234`
-- no release tags yet: `dev-abc1234`
-
-That means:
-
-- if `main` is exactly on the latest release tag, `ds version` matches what a
-  GitHub release installer sees
-- if `main` is ahead of the latest release, your local build intentionally shows
-  a newer git-derived version so it does not pretend to be the last published
-  release
-
-If you want the exact same version string as the latest GitHub release, build
-from the release tag or install the GitHub release artifact.
-
-## Add `ds` to your `PATH`
-
-You can always run the binary directly as `./bin/ds` (or `bin\ds.exe` on
-Windows), but for a normal `ds ...` workflow you can either add the build
-directory to your `PATH` or copy/symlink the binary into a directory that is
-already on your `PATH`.
-
-### POSIX shells (`bash`, `zsh`, `sh`)
-
-Add your build directory to a shell startup file such as `~/.profile`,
-`~/.bashrc`, or `~/.zshrc`:
-
-```bash
-export PATH="$PATH:/absolute/path/to/dotenv-sync/bin"
-```
-
-Reload the file or open a new shell:
-
-```bash
-source ~/.bashrc
-```
-
-### `fish`
-
-```fish
-fish_add_path /absolute/path/to/dotenv-sync/bin
-```
-
-### PowerShell
-
-For the current session:
-
-```powershell
-$env:Path += ";C:\absolute\path\to\dotenv-sync\bin"
-```
-
-For a persistent install, add the same directory through your system PATH
-settings or place `ds.exe` in a directory that is already on PATH.
-
-### Alternative: copy or symlink the binary
-
-Examples:
-
-```bash
-ln -s /absolute/path/to/dotenv-sync/bin/ds ~/.local/bin/ds
-```
-
-or:
-
-```bash
-install -Dm755 ./bin/ds ~/.local/bin/ds
-```
+| Command                       | What it is for                                                    |
+| ----------------------------- | ----------------------------------------------------------------- |
+| `ds sync`                     | Create or update `.env` from `.env.example` and your provider     |
+| `ds doctor`                   | Check config and provider readiness before syncing                |
+| `ds diff`                     | Preview redacted drift without writing files                      |
+| `ds validate`                 | Fail on malformed files, drift, duplicates, or unresolved secrets |
+| `ds missing`                  | List unresolved provider-backed keys                              |
+| `ds init`                     | Create `.env.example` from an existing `.env`                     |
+| `ds reverse`                  | Add new keys from `.env` back into `.env.example` as blanks       |
+| `ds push`                     | Upload `.env` back into Bitwarden (**Bitwarden-only**)            |
+| `ds scaffold`                 | Seed KeePass entries from `.env.example` (**KeePass-only**)       |
+| `ds --version` / `ds version` | Show build and release metadata                                   |
 
 ## Configuration
 
@@ -173,11 +132,6 @@ secret value. Defaults to `dotenv` if omitted.
 
 `.kdbx` files are automatically ignored by the bundled `.gitignore` entry.
 
-### General
-
-Blank values in `.env.example` are treated as provider-managed secrets. Literal
-values are treated as safe defaults and copied into `.env`.
-
 ### Bitwarden-specific options
 
 For Bitwarden, if `item_name` is omitted, `ds` derives it from the Git
@@ -209,7 +163,68 @@ mapping:
   PSWD: password
 ```
 
-## Commands
+## Automate schema updates with Lefthook
+
+If your team wants commits to keep a single `.env.example` in sync
+automatically, a simple `lefthook` setup can run `ds reverse`, push provider
+updates, and re-stage the schema before commit:
+
+```yaml
+pre-commit:
+  parallel: true
+  skip:
+    - rebase
+  commands:
+    ds-sync:
+      run: |
+        ds reverse
+        ds push
+        git add .env.example
+```
+
+That example mirrors a real-world `lefthook` flow, but keeps it to one
+`.env.example` so it stays easy to understand.
+
+Use this pattern when:
+
+- `.env.example` is your committed schema source of truth
+- you want local env additions reflected back into the schema before commit
+- you use Bitwarden write-back and want provider updates pushed automatically
+
+If you use KeePass or another read-only flow, drop the `ds push` line and keep
+just `ds reverse` plus `git add .env.example`.
+
+For the smoothest Bitwarden write-back flow, use `storage_mode: note_json`.
+
+## Install and build
+
+On Arch Linux, install the AUR package:
+
+```bash
+yay -S dotenv-sync-bin
+```
+
+That package installs the `ds` executable.
+
+Without an AUR helper:
+
+```bash
+git clone https://aur.archlinux.org/dotenv-sync-bin.git
+cd dotenv-sync-bin
+makepkg -si
+```
+
+To build from source locally:
+
+```bash
+go build -o ./bin/ds ./cmd/ds
+```
+
+Local development builds report `dev` metadata by default. Release builds inject
+their version, commit, and build time at build time instead of editing source
+files.
+
+## Command reference
 
 ### `ds sync`
 
@@ -234,7 +249,8 @@ ds push
 ```
 
 - Bitwarden-only for now; other providers may add write support later
-- Requires `storage_mode: note_json`
+- Requires a Bitwarden write-capable setup; `note_json` is the simplest full
+  round-trip mode
 - Reads `.env` as the upload source and `.env.example` as schema context
 - In `note_json`, writes a deterministic JSON payload into the repo-scoped
   Bitwarden item notes
@@ -350,6 +366,97 @@ ds version
 - `1`: operational failure
 - `2`: validation, drift, or missing-value issue
 
+## CI and releases
+
+GitHub Actions runs `go test ./...` on every push, pull request, and manual
+dispatch via `.github/workflows/go-tests.yml`.
+
+Every push to `main` now drives release automation automatically:
+
+```bash
+git switch main
+git pull --ff-only
+git push origin main
+```
+
+`.github/workflows/release.yml` runs on pushes to `main`, calculates the next
+patch version, reruns `go test ./...`, builds versioned archives for Linux,
+macOS, and Windows, bundles `README.md` and `LICENSE` into the release
+archives, writes `ds_<version>_SHA256SUMS`, verifies the Linux reference
+artifact with `ds --version`, and then creates or refreshes the matching GitHub
+release.
+
+If `AUR_SSH_PRIVATE_KEY` is configured, `.github/workflows/aur-publish.yml` is
+invoked directly from `.github/workflows/release.yml` after the GitHub release
+succeeds, and updates the `dotenv-sync-bin` AUR package from the published Linux
+release artifacts. This direct downstream handoff is also the intended pattern
+for future package-manager publishers. The AUR package installs the `ds`
+executable even though the package name is `dotenv-sync-bin`.
+
+If you need an AUR-only packaging fix without a new upstream release tag, rerun
+`go run ./scripts/aurpkg` against the existing tag with a higher `--pkgrel`
+value and push the updated AUR repo.
+
+You can also run **Publish AUR package** manually from GitHub Actions with a
+`release_tag` such as `v0.0.7` and a `pkgrel` such as `2`.
+
+To enable AUR publishing from GitHub Actions:
+
+1. Add an SSH key to your AUR account.
+2. Save the matching private key as the `AUR_SSH_PRIVATE_KEY` repository secret.
+3. Make sure the `dotenv-sync-bin` AUR repo exists at
+   `ssh://aur@aur.archlinux.org/dotenv-sync-bin.git`.
+
+You can monitor the latest release run with:
+
+```bash
+gh run list --workflow release.yml --limit 1
+gh run watch <run-id>
+```
+
+The AUR publisher can be monitored separately with:
+
+```bash
+gh run list --workflow aur-publish.yml --limit 1
+gh run watch <run-id>
+```
+
+## Keep `ds` up to date locally
+
+If you keep `ds` in `~/.local/bin/ds`, the simplest update flow is:
+
+```bash
+git switch main
+git pull --ff-only
+./scripts/install-local.sh
+```
+
+By default `./scripts/install-local.sh` installs to `~/.local/bin/ds`. You can
+override that with `--bin /custom/path/to/ds`.
+
+If you use this repository's `lefthook` setup, `lefthook install` also enables
+automatic local refreshes after `git commit` and `git merge` on the default
+branch. Those hooks call `./scripts/install-local.sh --quiet` through
+`./scripts/install-local-hook.sh`, and they intentionally skip non-default
+branches so feature work does not overwrite your globally installed `ds`.
+
+The script injects version metadata from your current checkout:
+
+- exact release tag checkout: `v0.4.0`
+- commits ahead of a release: `v0.4.0-3-gabc1234`
+- no release tags yet: `dev-abc1234`
+
+That means:
+
+- if `main` is exactly on the latest release tag, `ds version` matches what a
+  GitHub release installer sees
+- if `main` is ahead of the latest release, your local build intentionally shows
+  a newer git-derived version so it does not pretend to be the last published
+  release
+
+If you want the exact same version string as the latest GitHub release, build
+from the release tag or install the GitHub release artifact.
+
 ## Development
 
 ```bash
@@ -401,57 +508,55 @@ To install straight into `~/.local/bin/ds` with Git-derived version metadata:
 ./scripts/install-local.sh
 ```
 
-## CI and releases
+## Add `ds` to your `PATH`
 
-GitHub Actions runs `go test ./...` on every push, pull request, and manual
-dispatch via `.github/workflows/go-tests.yml`.
+You can always run the binary directly as `./bin/ds` (or `bin\ds.exe` on
+Windows), but for a normal `ds ...` workflow you can either add the build
+directory to your `PATH` or copy/symlink the binary into a directory that is
+already on your `PATH`.
 
-Every push to `main` now drives release automation automatically:
+### POSIX shells (`bash`, `zsh`, `sh`)
+
+Add your build directory to a shell startup file such as `~/.profile`,
+`~/.bashrc`, or `~/.zshrc`:
 
 ```bash
-git switch main
-git pull --ff-only
-git push origin main
+export PATH="$PATH:/absolute/path/to/dotenv-sync/bin"
 ```
 
-`.github/workflows/release.yml` runs on pushes to `main`, calculates the next
-patch version, reruns `go test ./...`, builds versioned archives for Linux,
-macOS, and Windows, bundles `README.md` and `LICENSE` into the release
-archives, writes `ds_<version>_SHA256SUMS`, verifies the Linux reference
-artifact with `ds --version`, and then creates or refreshes the matching GitHub
-release.
-
-If `AUR_SSH_PRIVATE_KEY` is configured, `.github/workflows/aur-publish.yml`
-is invoked directly from `.github/workflows/release.yml` after the GitHub
-release succeeds, and updates the `dotenv-sync-bin` AUR package from the
-published Linux release artifacts. This direct downstream handoff is also the
-intended pattern for future package-manager publishers. The AUR package installs
-the `ds` executable even though the package name is `dotenv-sync-bin`.
-
-If you need an AUR-only packaging fix without a new upstream release tag, rerun
-`go run ./scripts/aurpkg` against the existing tag with a higher `--pkgrel`
-value and push the updated AUR repo.
-
-You can also run **Publish AUR package** manually from GitHub Actions with a
-`release_tag` such as `v0.0.6` and a `pkgrel` such as `2`.
-
-To enable AUR publishing from GitHub Actions:
-
-1. Add an SSH key to your AUR account.
-2. Save the matching private key as the `AUR_SSH_PRIVATE_KEY` repository secret.
-3. Make sure the `dotenv-sync-bin` AUR repo exists at
-   `ssh://aur@aur.archlinux.org/dotenv-sync-bin.git`.
-
-You can monitor the latest release run with:
+Reload the file or open a new shell:
 
 ```bash
-gh run list --workflow release.yml --limit 1
-gh run watch <run-id>
+source ~/.bashrc
 ```
 
-The AUR publisher can be monitored separately with:
+### `fish`
+
+```fish
+fish_add_path /absolute/path/to/dotenv-sync/bin
+```
+
+### PowerShell
+
+For the current session:
+
+```powershell
+$env:Path += ";C:\absolute\path\to\dotenv-sync\bin"
+```
+
+For a persistent install, add the same directory through your system PATH
+settings or place `ds.exe` in a directory that is already on PATH.
+
+### Alternative: copy or symlink the binary
+
+Examples:
 
 ```bash
-gh run list --workflow aur-publish.yml --limit 1
-gh run watch <run-id>
+ln -s /absolute/path/to/dotenv-sync/bin/ds ~/.local/bin/ds
+```
+
+or:
+
+```bash
+install -Dm755 ./bin/ds ~/.local/bin/ds
 ```
