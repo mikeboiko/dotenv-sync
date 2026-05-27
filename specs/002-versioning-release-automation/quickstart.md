@@ -1,6 +1,6 @@
-# Quickstart: Automatic minor release automation
+# Quickstart: Automatic patch release automation
 
-## Preview the next automatic minor release locally
+## Preview the next automatic patch release locally
 
 Run the local preview helper from the repository root:
 
@@ -11,8 +11,8 @@ go run ./scripts/nextversion
 Expected examples:
 
 ```text
-v0.1.0   # when no prior semver tags exist
-v0.5.0   # when the latest reachable semver tag is v0.4.2
+v0.0.1   # when no prior semver tags exist
+v0.4.3   # when the latest reachable semver tag is v0.4.2
 ```
 
 ## Build a local binary with the predicted release metadata
@@ -33,7 +33,7 @@ go build -o ./bin/ds \
 This mirrors the metadata contract the release workflow verifies before
 publication.
 
-## Push to `main` to trigger an automatic minor release
+## Push to `main` to trigger an automatic patch release
 
 ```bash
 git switch main
@@ -51,13 +51,14 @@ gh run watch <run-id>
 Under normal GitHub-hosted runner availability, the release run should finish
 within 15 minutes.
 
-The workflow should calculate the next minor version, run `go test ./...`,
+The workflow should calculate the next patch version, run `go test ./...`,
 build the release artifacts, verify the Linux reference artifact with
 `ds --version`, and rely on automated tests for cross-platform version parity
 before publishing.
 
-After the GitHub release is published, downstream package-manager workflows such
-as `aur-publish.yml` can consume the released version and artifacts.
+After the GitHub release step succeeds, the release workflow invokes downstream
+package-manager workflows such as `aur-publish.yml`, which consume the released
+version and artifacts without rebuilding them.
 
 ## Verify a published release
 
@@ -72,6 +73,5 @@ After the workflow completes:
 
 If the release workflow is rerun for a commit that already has a reachable
 semver tag, it should report that the commit is already released by tag and
-avoid creating another tag or GitHub release. If the tag exists but the GitHub
-release record is missing, repair that drift manually instead of expecting the
-workflow to republish it automatically.
+avoid creating another version. The rerun may refresh existing assets or
+recreate the matching GitHub release record for that tagged version if needed.

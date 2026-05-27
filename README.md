@@ -360,7 +360,7 @@ go test ./... -bench . -run '^$'
 
 ## Build a local versioned binary
 
-Preview the next minor tag from the current reachable semver tags:
+Preview the next patch tag from the current reachable semver tags:
 
 ```bash
 go run ./scripts/nextversion
@@ -369,12 +369,12 @@ go run ./scripts/nextversion
 Example outputs:
 
 ```text
-v0.1.0
-v0.5.0
+v0.0.1
+v0.4.3
 ```
 
 `scripts/nextversion` is a local preview helper for the same automatic release
-logic used in CI. By default it predicts the next **minor** release from the
+logic used in CI. By default it predicts the next **patch** release from the
 current reachable semver tags.
 
 Then build a local binary with that predicted release metadata:
@@ -415,17 +415,18 @@ git push origin main
 ```
 
 `.github/workflows/release.yml` runs on pushes to `main`, calculates the next
-minor version, reruns `go test ./...`, builds versioned archives for Linux,
+patch version, reruns `go test ./...`, builds versioned archives for Linux,
 macOS, and Windows, bundles `README.md` and `LICENSE` into the release
 archives, writes `ds_<version>_SHA256SUMS`, verifies the Linux reference
 artifact with `ds --version`, and then creates or refreshes the matching GitHub
 release.
 
 If `AUR_SSH_PRIVATE_KEY` is configured, `.github/workflows/aur-publish.yml`
-then updates the `dotenv-sync-bin` AUR package from the published Linux release
-artifacts. This downstream `release.published` pattern is also the intended hook
-point for future package-manager publishers. The AUR package installs the `ds`
-executable even though the package name is `dotenv-sync-bin`.
+is invoked directly from `.github/workflows/release.yml` after the GitHub
+release succeeds, and updates the `dotenv-sync-bin` AUR package from the
+published Linux release artifacts. This direct downstream handoff is also the
+intended pattern for future package-manager publishers. The AUR package installs
+the `ds` executable even though the package name is `dotenv-sync-bin`.
 
 If you need an AUR-only packaging fix without a new upstream release tag, rerun
 `go run ./scripts/aurpkg` against the existing tag with a higher `--pkgrel`

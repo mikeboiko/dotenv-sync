@@ -1,4 +1,4 @@
-# Data Model: Automatic minor release automation
+# Data Model: Automatic patch release automation
 
 ## Release Trigger
 
@@ -23,7 +23,7 @@
   publication.
 - **Fields**:
   - `previous_version`: latest reachable semver tag or `v0.0.0`
-  - `next_version`: computed minor version to publish
+  - `next_version`: computed patch version to publish
   - `commit`: commit SHA included in the release build
   - `status`: enum such as `planned`, `validated`, `built`, `published`,
     `skipped`, or `failed`

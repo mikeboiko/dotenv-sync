@@ -16,7 +16,7 @@ func TestContractReleaseWorkflow(t *testing.T) {
 		"Wait for older release runs",
 		"actions/workflows/release.yml/runs",
 		"go test ./...",
-		"go run ./scripts/nextversion --bump minor",
+		"go run ./scripts/nextversion --bump patch",
 		"already_released",
 		"Commit already released by tag",
 		"stable semver tag",
@@ -27,6 +27,8 @@ func TestContractReleaseWorkflow(t *testing.T) {
 		"gh release upload",
 		"gh release create",
 		"ds --version",
+		"uses: ./.github/workflows/aur-publish.yml",
+		"release_tag: ${{ needs.release.outputs.version }}",
 	} {
 		if !strings.Contains(content, want) {
 			t.Fatalf("workflow missing %q", want)
@@ -45,16 +47,17 @@ func TestContractReleaseWorkflow(t *testing.T) {
 	}
 
 	waitIndex := strings.Index(content, "Wait for older release runs")
-	resolveIndex := strings.Index(content, "go run ./scripts/nextversion --bump minor")
+	resolveIndex := strings.Index(content, "go run ./scripts/nextversion --bump patch")
 	testIndex := strings.Index(content, "go test ./...")
 	buildIndex := strings.Index(content, "Build release artifacts")
 	verifyIndex := strings.Index(content, "ds --version")
 	publishIndex := strings.Index(content, "gh release view")
 	releaseIndex := strings.Index(content, "gh release create")
-	if waitIndex == -1 || resolveIndex == -1 || testIndex == -1 || buildIndex == -1 || verifyIndex == -1 || publishIndex == -1 || releaseIndex == -1 {
+	aurIndex := strings.Index(content, "uses: ./.github/workflows/aur-publish.yml")
+	if waitIndex == -1 || resolveIndex == -1 || testIndex == -1 || buildIndex == -1 || verifyIndex == -1 || publishIndex == -1 || releaseIndex == -1 || aurIndex == -1 {
 		t.Fatal("workflow missing required ordering markers")
 	}
-	if waitIndex > resolveIndex || resolveIndex > testIndex || testIndex > buildIndex || buildIndex > verifyIndex || verifyIndex > publishIndex || publishIndex > releaseIndex {
+	if waitIndex > resolveIndex || resolveIndex > testIndex || testIndex > buildIndex || buildIndex > verifyIndex || verifyIndex > publishIndex || publishIndex > releaseIndex || releaseIndex > aurIndex {
 		t.Fatalf("workflow must run tests before creating the release")
 	}
 }

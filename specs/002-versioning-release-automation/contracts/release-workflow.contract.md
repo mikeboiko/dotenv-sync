@@ -1,4 +1,4 @@
-# Workflow Contract: Automatic minor release automation
+# Workflow Contract: Automatic patch release automation
 
 ## Workflow
 
@@ -8,7 +8,7 @@
 ## Inputs
 
 - No manual release inputs are required.
-- Version calculation is always minor-only for automatic `main` pushes.
+- Version calculation is always patch-only for automatic `main` pushes.
 
 ## Preconditions
 
@@ -21,11 +21,11 @@
 ## Behavior
 
 1. Determine the latest reachable semantic version tag, ignoring unrelated tags.
-2. Compute the next minor version using `v0.0.0` as the baseline when no semver
+2. Compute the next patch version using `v0.0.0` as the baseline when no semver
    tag exists.
-3. If a reachable semver tag already points at the pushed commit, exit without
-   creating another tag or release, report a clear skip reason, and require
-   manual maintainer repair if the GitHub release record is missing.
+3. If a reachable semver tag already points at the pushed commit, avoid
+   calculating another version and refresh or recreate the matching GitHub
+   release assets for that same tagged version as needed.
 4. Run validation and tests before creating any tag or GitHub release.
 5. Build the supported `ds` target matrix with embedded version metadata.
 6. Package release artifacts using deterministic versioned names.
@@ -33,8 +33,8 @@
    publication, and rely on automated tests to enforce version parity across the
    remaining artifact matrix.
 8. Create or refresh the GitHub release only after all builds succeed.
-9. Let downstream package-manager workflows consume the published GitHub release
-   and its artifacts after release publication succeeds.
+9. Invoke downstream package-manager workflows only after release publication
+   succeeds so they consume the published GitHub release and its artifacts.
 
 ## Artifact Naming
 
@@ -57,8 +57,8 @@ ds_<version>_windows_<arch>.zip
 - If version calculation, validation, or any build fails, the workflow must stop
   before creating the release tag.
 - If a rerun targets a commit that already has a reachable semver tag, the
-  workflow must skip publication, explain why, and avoid recreating release
-  state automatically.
+  workflow must avoid creating a new version and explain whether it refreshed or
+  recreated the matching tagged release state.
 - If overlapping `main` pushes occur, release runs must remain serialized so
   version publication cannot race.
 - Logs may show version numbers, refs, and artifact names, but must not expose

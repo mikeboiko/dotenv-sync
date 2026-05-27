@@ -16,7 +16,7 @@ Auto-generated from all feature plans. Last updated: 2026-05-27
 - `gopkg.in/yaml.v3` for optional `.envsync.yaml` configuration (001-dotenv-sync-cli)
 - Provider adapters under `internal/provider/`, currently including Bitwarden via `rbw` and KeePass via `keepassxc-cli` (001-dotenv-sync-cli)
 - Git tags and GitHub Releases as the versioning source of truth (002-versioning-release-automation)
-- GitHub Actions manual semver release workflow for `ds` (002-versioning-release-automation)
+- GitHub Actions automatic patch-release workflow for `ds` with downstream package publishers such as AUR (002-versioning-release-automation)
 
 ## Project Structure
 

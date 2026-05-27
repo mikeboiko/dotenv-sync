@@ -1,4 +1,4 @@
-# Research: Automatic minor release automation
+# Research: Automatic patch release automation
 
 ## Decision 1: Reuse embedded version metadata only for release verification
 
@@ -15,27 +15,27 @@
     publication should confirm that released binaries report the version they
     contain.
 
-## Decision 2: Trigger release automation on pushes to the default branch and always bump minor
+## Decision 2: Trigger release automation on pushes to the default branch and always bump patch
 
 - **Decision**: Replace manual `workflow_dispatch` release creation with an
   automatic workflow that runs on pushes to `main` and always computes the next
-  minor version.
-- **Rationale**: The user asked for automatic minor bumps on every push to
+  patch version.
+- **Rationale**: The user asked for automatic patch bumps on every push to
   `main`, and eliminating manual bump selection removes the remaining human step
   in the release path.
 - **Alternatives considered**:
-  - Keep manual dispatch with a default `minor` input: rejected because it still
+  - Keep manual dispatch with a default `patch` input: rejected because it still
     requires a maintainer to trigger each release.
   - Use commit messages or labels to select major/minor/patch bumps: rejected
-    because the requested behavior is minor-only and the repository does not rely
+    because the requested behavior is patch-only and the repository does not rely
     on commit-convention parsing today.
 
 ## Decision 3: Continue treating semver Git tags as the release source of truth
 
-- **Decision**: Compute the next minor version from the latest reachable semver
+- **Decision**: Compute the next patch version from the latest reachable semver
   tag, ignore unrelated tags, and use `v0.0.0` when no semver tag exists.
 - **Rationale**: Git tags remain the canonical release identifier for a Go CLI,
-  and minor-only automation can build on the existing tag-based logic without
+  and patch-only automation can build on the existing tag-based logic without
   splitting release truth across source files, workflows, and GitHub Releases.
 - **Alternatives considered**:
   - Maintain a checked-in `VERSION` file: rejected because it duplicates Git tag
@@ -61,24 +61,24 @@
   - Always fail reruns on already released commits: rejected because a clear
     no-op or skip result is safer and easier for maintainers to interpret.
 
-## Decision 5: Treat tag-without-release drift as a manual repair case
+## Decision 5: Treat tag-without-release drift as a repairable rerun case
 
 - **Decision**: If a semver tag already points at the commit but the
   corresponding GitHub release record is missing or incomplete, the workflow
-  skips automatic publication and asks the maintainer to repair the release
-  state manually.
-- **Rationale**: Automatic recreation could mask partial-release problems or
-  attach artifacts to the wrong history. A visible skip keeps the canonical tag
-  state intact and avoids publishing duplicate versions.
+  refreshes the matching release assets or recreates the GitHub release for that
+  same version instead of calculating a new one.
+- **Rationale**: The canonical version is still derived from the existing tag, so
+  reruns can safely repair GitHub release drift without publishing a duplicate
+  semantic version.
 - **Alternatives considered**:
-  - Recreate the GitHub release automatically from the existing tag: rejected
-    because it blurs the line between idempotent reruns and manual recovery.
+  - Always skip and require manual repair: rejected because it leaves a common
+    automation failure mode unresolved even though the version is already known.
   - Delete and recreate the tag automatically: rejected because it is
     destructive and risky in CI.
 
 ## Decision 6: Publish only after validation and all builds succeed
 
-- **Decision**: The workflow must compute the next minor version, run tests,
+- **Decision**: The workflow must compute the next patch version, run tests,
   build the full artifact matrix, verify at least one built binary, and only
   then create the tag and GitHub release.
 - **Rationale**: This prevents partial releases where a tag exists but artifacts
@@ -90,24 +90,25 @@
   - Publish artifacts incrementally by platform: rejected because automatic
     releases should remain all-or-nothing.
 
-## Decision 7: Fan out package publishing from the successful GitHub release
+## Decision 7: Fan out package publishing directly from the successful release workflow
 
 - **Decision**: Keep GitHub release build/publish in the main release workflow,
-  and let downstream package-manager workflows such as AUR trigger from the
-  published-release event.
+  and invoke downstream package-manager workflows such as AUR only after the
+  GitHub release step succeeds.
 - **Rationale**: Package managers should consume the verified release artifacts
-  rather than duplicate upstream build logic, and a release-published fan-out
-  point cleanly supports future package managers.
+  rather than duplicate upstream build logic, and reusable workflow fan-out
+  avoids relying on `release.published` events that are not emitted when the
+  release is created with `GITHUB_TOKEN`.
 - **Alternatives considered**:
-  - Publish AUR directly inside the main release workflow: rejected because it
-    couples downstream packaging secrets and failure modes to the core build.
+  - Trigger package-manager publishing from `release.published`: rejected
+    because workflow-created releases using `GITHUB_TOKEN` do not fan out.
   - Trigger package-manager publishing from raw `push` events: rejected because
     downstream publishers should only run after a successful GitHub release.
 
 ## Decision 8: Keep local preview and documentation aligned with the automated flow
 
 - **Decision**: Maintain a repository-local preview helper and update README plus
-  quickstart guidance so contributors can predict the next minor version,
+  quickstart guidance so contributors can predict the next patch version,
   observe the automatic workflow, and verify published artifacts.
 - **Rationale**: Automatic releases are only understandable if contributors can
   reproduce the version calculation locally and recognize the CI behavior from

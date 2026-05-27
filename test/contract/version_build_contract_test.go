@@ -10,7 +10,7 @@ import (
 	"dotenv-sync/internal/release"
 )
 
-func TestContractNextMinorPreviewFeedsVersionedBuild(t *testing.T) {
+func TestContractNextPatchPreviewFeedsVersionedBuild(t *testing.T) {
 	project := t.TempDir()
 	initVersionRepo(t, project)
 	writeFile(t, filepath.Join(project, "README.md"), "release tests\n")
@@ -20,7 +20,7 @@ func TestContractNextMinorPreviewFeedsVersionedBuild(t *testing.T) {
 	commitVersionRepo(t, project, "next release")
 
 	version := previewNextVersion(t, project)
-	if version != "v0.5.0" {
+	if version != "v0.4.3" {
 		t.Fatalf("preview version = %q", version)
 	}
 

@@ -14,6 +14,9 @@ jobs:
     name: Build and publish release
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      already_released: ${{ steps.version.outputs.already_released }}
 
     steps:
       - name: Check out repository
@@ -54,7 +57,7 @@ jobs:
           stderr_file="$(mktemp)"
 
           set +e
-          go run ./scripts/nextversion --bump minor >"${stdout_file}" 2>"${stderr_file}"
+          go run ./scripts/nextversion --bump patch >"${stdout_file}" 2>"${stderr_file}"
           status=$?
           set -e
 
@@ -154,3 +157,12 @@ jobs:
           fi
 
           gh release create "${VERSION}" dist/ds_* --title "${VERSION}" --generate-notes --target "${GITHUB_SHA}"
+
+  publish_aur:
+    name: Publish AUR package
+    needs: release
+    uses: ./.github/workflows/aur-publish.yml
+    with:
+      release_tag: ${{ needs.release.outputs.version }}
+      pkgrel: '1'
+    secrets: inherit

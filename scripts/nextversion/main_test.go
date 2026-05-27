@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestRunDefaultsToMinorPreview(t *testing.T) {
+func TestRunDefaultsToPatchPreview(t *testing.T) {
 	repo := t.TempDir()
 	initGitRepo(t, repo)
 	writeFile(t, filepath.Join(repo, "README.md"), "release tests\n")
@@ -25,7 +25,7 @@ func TestRunDefaultsToMinorPreview(t *testing.T) {
 		t.Fatalf("run exit code = %d stderr=%q", code, stderr.String())
 	}
 	if strings.TrimSpace(stdout.String()) != strings.TrimSpace(readGoldenFile(t, "release-published.txt", map[string]string{
-		"{{VERSION}}": "v0.5.0",
+		"{{VERSION}}": "v0.4.3",
 	})) {
 		t.Fatalf("preview stdout = %q", stdout.String())
 	}
@@ -34,7 +34,7 @@ func TestRunDefaultsToMinorPreview(t *testing.T) {
 	}
 }
 
-func TestRunSupportsExplicitPatchPreview(t *testing.T) {
+func TestRunSupportsExplicitMinorPreview(t *testing.T) {
 	repo := t.TempDir()
 	initGitRepo(t, repo)
 	writeFile(t, filepath.Join(repo, "README.md"), "release tests\n")
@@ -44,12 +44,12 @@ func TestRunSupportsExplicitPatchPreview(t *testing.T) {
 	commitAll(t, repo, "next")
 
 	var stdout, stderr bytes.Buffer
-	code := run(context.Background(), []string{"--dir", repo, "--bump", "patch"}, &stdout, &stderr)
+	code := run(context.Background(), []string{"--dir", repo, "--bump", "minor"}, &stdout, &stderr)
 	if code != 0 {
 		t.Fatalf("run exit code = %d stderr=%q", code, stderr.String())
 	}
 	if strings.TrimSpace(stdout.String()) != strings.TrimSpace(readGoldenFile(t, "release-published.txt", map[string]string{
-		"{{VERSION}}": "v0.4.3",
+		"{{VERSION}}": "v0.5.0",
 	})) {
 		t.Fatalf("preview stdout = %q", stdout.String())
 	}
@@ -102,7 +102,7 @@ func TestRunFailsWhenNextTagAlreadyExistsOutsideMainHistory(t *testing.T) {
 	runGit(t, repo, "switch", "-c", "side-release")
 	writeFile(t, filepath.Join(repo, "side.txt"), "side release\n")
 	commitAll(t, repo, "side release")
-	tagRepo(t, repo, "v0.5.0")
+	tagRepo(t, repo, "v0.4.3")
 
 	runGit(t, repo, "switch", "main")
 	writeFile(t, filepath.Join(repo, "main.txt"), "main release\n")
@@ -116,7 +116,7 @@ func TestRunFailsWhenNextTagAlreadyExistsOutsideMainHistory(t *testing.T) {
 	if stdout.Len() != 0 {
 		t.Fatalf("unexpected stdout: %q", stdout.String())
 	}
-	if !strings.Contains(stderr.String(), "next release tag v0.5.0 already exists") {
+	if !strings.Contains(stderr.String(), "next release tag v0.4.3 already exists") {
 		t.Fatalf("unexpected stderr: %q", stderr.String())
 	}
 }

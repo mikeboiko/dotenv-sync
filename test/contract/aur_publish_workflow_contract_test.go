@@ -9,11 +9,15 @@ func TestContractAurPublishWorkflow(t *testing.T) {
 	content := readRepoFile(t, ".github", "workflows", "aur-publish.yml")
 
 	for _, want := range []string{
+		"workflow_call:",
 		"release:",
 		"published",
 		"workflow_dispatch:",
 		"release_tag:",
 		"pkgrel:",
+		"inputs.release_tag || github.event.release.tag_name",
+		"inputs.pkgrel || '1'",
+		"concurrency:",
 		"fetch-depth: 0",
 		"AUR_SSH_PRIVATE_KEY",
 		"gh release download",

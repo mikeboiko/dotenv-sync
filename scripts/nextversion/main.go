@@ -24,7 +24,7 @@ func run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	)
 	flags := flag.NewFlagSet("nextversion", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	flags.StringVar(&bump, "bump", "minor", "semantic version part to bump: patch, minor, or major")
+	flags.StringVar(&bump, "bump", "patch", "semantic version part to bump: patch, minor, or major")
 	flags.StringVar(&dir, "dir", ".", "repository directory to inspect")
 	if err := flags.Parse(args); err != nil {
 		return 1
