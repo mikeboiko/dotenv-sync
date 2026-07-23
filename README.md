@@ -203,6 +203,52 @@ just `ds reverse` plus `git add .env.example`.
 
 For the smoothest Bitwarden write-back flow, use `storage_mode: note_json`.
 
+## Refresh `.env` after pulling with Lefthook
+
+The pre-commit hook above keeps `.env.example` and your provider in sync when
+_you_ commit. A companion `post-merge` hook keeps your local `.env` in sync
+when you pull in someone else's changes:
+
+```yaml
+post-merge:
+  commands:
+    ds-sync:
+      run: |
+        if rbw unlocked >/dev/null 2>&1; then
+          ds sync
+        else
+          echo "Skipping ds sync: rbw is locked. Run 'rbw unlock' then 'ds sync' manually."
+        fi
+```
+
+Use this pattern when:
+
+- a teammate's commit might add new keys to `.env.example`
+- a teammate's `ds push` might update a provider-managed value you don't have
+  locally yet
+- you want `git pull` (including a custom alias that wraps it) to leave
+  `.env` current without a manual step afterward
+
+Notes:
+
+- `post-merge` fires on `git pull`, including fast-forward pulls, but not on
+  a no-op "Already up to date" pull or on `git fetch` alone. A failing hook
+  command never fails the pull itself — `post-merge` is a non-blocking git
+  hook.
+- `ds sync` errors if it can't reach the provider, even when `.env` is
+  already fully up to date. For Bitwarden via `rbw`, checking
+  `rbw unlocked` first (as above) turns a locked session into a quiet
+  one-line skip instead of a hard error on every pull. Other providers or
+  lock models may need a different readiness check, or none at all.
+- Run `lefthook install` again after adding a hook type, like `post-merge`,
+  that wasn't previously configured in `.lefthook.yml` — it needs to
+  generate that hook's shim under `.git/hooks/`.
+
+This is unrelated to this repository's own `post-merge` hook (see
+[Keep `ds` up to date locally](#keep-ds-up-to-date-locally)), which
+refreshes a locally installed `ds` binary after pulling changes to
+`dotenv-sync` itself rather than syncing a consuming project's `.env`.
+
 ## Install and build
 
 On Arch Linux, install the AUR package:
