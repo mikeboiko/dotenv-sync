@@ -11,6 +11,12 @@ pre-commit:
         echo "Formatting files with prettier..."
         npx prettier --write {staged_files}
       stage_fixed: true
+    shfmt-format:
+      glob: '**/*.{sh,bash}'
+      run: |
+        echo "Formatting shell scripts with shfmt..."
+        shfmt --apply-ignore -w {staged_files}
+      stage_fixed: true
     go-format:
       glob: '**/*.go'
       run: |
