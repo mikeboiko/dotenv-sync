@@ -5,17 +5,17 @@ pkgver=1.2.3
 pkgrel=1
 pkgdesc='Keep .env files in sync with .env.example and provider-managed secrets'
 arch=('x86_64' 'aarch64')
-url='https://github.com/mikeboiko/dotenv-sync'
+url='https://github.com/bytehound-labs/dotenv-sync'
 license=('MIT')
 options=('!strip')
 provides=('dotenv-sync')
 conflicts=('dotenv-sync' 'dotenv-sync-git')
 
-source=("LICENSE::https://raw.githubusercontent.com/mikeboiko/dotenv-sync/v${pkgver}/LICENSE" "README.md::https://raw.githubusercontent.com/mikeboiko/dotenv-sync/v${pkgver}/README.md")
+source=("LICENSE::https://raw.githubusercontent.com/bytehound-labs/dotenv-sync/v${pkgver}/LICENSE" "README.md::https://raw.githubusercontent.com/bytehound-labs/dotenv-sync/v${pkgver}/README.md")
 sha256sums=('cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc' 'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd')
-source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/mikeboiko/dotenv-sync/releases/download/v${pkgver}/ds_v${pkgver}_linux_amd64.tar.gz")
+source_x86_64=("${pkgname}-${pkgver}-x86_64.tar.gz::https://github.com/bytehound-labs/dotenv-sync/releases/download/v${pkgver}/ds_v${pkgver}_linux_amd64.tar.gz")
 sha256sums_x86_64=('aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa')
-source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/mikeboiko/dotenv-sync/releases/download/v${pkgver}/ds_v${pkgver}_linux_arm64.tar.gz")
+source_aarch64=("${pkgname}-${pkgver}-aarch64.tar.gz::https://github.com/bytehound-labs/dotenv-sync/releases/download/v${pkgver}/ds_v${pkgver}_linux_arm64.tar.gz")
 sha256sums_aarch64=('bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb')
 
 package() {

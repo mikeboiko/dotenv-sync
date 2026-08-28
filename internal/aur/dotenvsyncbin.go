@@ -11,8 +11,9 @@ import (
 const (
 	dotenvSyncBinPackageName = "dotenv-sync-bin"
 	dotenvSyncDescription    = "Keep .env files in sync with .env.example and provider-managed secrets"
-	dotenvSyncURL            = "https://github.com/mikeboiko/dotenv-sync"
-	dotenvSyncRawURL         = "https://raw.githubusercontent.com/mikeboiko/dotenv-sync"
+	dotenvSyncRepository     = "bytehound-labs/dotenv-sync"
+	dotenvSyncURL            = "https://github.com/" + dotenvSyncRepository
+	dotenvSyncRawURL         = "https://raw.githubusercontent.com/" + dotenvSyncRepository
 )
 
 type CommonSource struct {
@@ -142,7 +143,7 @@ func (p DotenvSyncBin) PkgVer() string {
 }
 
 func (p DotenvSyncBin) templateSourceURL(target Target) string {
-	return fmt.Sprintf("https://github.com/mikeboiko/dotenv-sync/releases/download/v${pkgver}/ds_v${pkgver}_linux_%s.tar.gz", target.LinuxGOARCH)
+	return fmt.Sprintf("%s/releases/download/v${pkgver}/ds_v${pkgver}_linux_%s.tar.gz", dotenvSyncURL, target.LinuxGOARCH)
 }
 
 func (p DotenvSyncBin) templateTaggedFileURL(name string) string {

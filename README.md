@@ -1,5 +1,7 @@
 # dotenv-sync
 
+[Source repository](https://github.com/bytehound-labs/dotenv-sync)
+
 `dotenv-sync` is a cross-platform Go CLI for keeping a local `.env` file aligned
 with a schema in `.env.example` while resolving provider-managed values through
 a secret provider. Built-in providers currently include **Bitwarden** (via the
